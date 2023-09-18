@@ -38,6 +38,9 @@ class Configuration(BaseSettings):
     kafka_message_max_bytes: int = 1000000000
     kafka_producer_queue_size: int = 1000
     kafka_group: str = 'default'
+    # JWT
+    jwt_token_expire_days = 7
+    jwt_secret = Field('DEMO_KEY')
 
     # 拓展属性
 

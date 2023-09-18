@@ -10,6 +10,7 @@ from .base import OLAPEngine
 from .base import OLAPModelBase
 from .base import OLTPEngine
 from .base import OLTPModelBase
+from .system import User
 
 _base = [
     'ModelTemplate',

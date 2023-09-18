@@ -1,6 +1,6 @@
 """
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : common.py
+File Name   : base.py
 Author      : jinming.yang
 Description : API接口会共用到的一些类、方法的定义实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -8,8 +8,13 @@ Description : API接口会共用到的一些类、方法的定义实现
 from datetime import datetime
 from typing import Union
 
+from clickhouse_driver import Client
 from fastapi import APIRouter
+from fastapi import Depends
 from fastapi import HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from jose import jwt
 from sqlalchemy import Column
 from sqlalchemy import func
 from sqlalchemy import insert
@@ -24,14 +29,46 @@ from defines import *
 from utils import *
 
 oltp_session_factory = scoped_session(sessionmaker(bind=OLTPEngine))
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
+ALGORITHM = 'HS256'
 
 
-def get_router(path, name):
+async def get_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
+        if uid := payload.get('uid'):
+            if user := execute_sql(select(User).where(User.id == uid), fetchall=False):
+                return user
+            else:
+                raise HTTPException(404)
+        else:
+            raise HTTPException(401, '无效的认证信息')
+    except JWTError:
+        raise HTTPException(401, '无效的认证信息')
+
+
+class SessionManager:
+    def __init__(self):
+        self.oltp = oltp_session_factory()
+        self.olap = Client.from_url(CONFIG.olap_uri)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.oltp.close()
+        self.olap.disconnect()
+
+
+def get_router(path, name, skip_auth=False):
     """
     生成API的路由：方便统一调整
     """
     url_prefix = f'/{path.replace(".", "/")}'
-    return APIRouter(prefix=url_prefix, tags=[name])
+    if skip_auth:
+        return APIRouter(prefix=url_prefix, tags=[name])
+    else:
+        return APIRouter(prefix=url_prefix, tags=[name], dependencies=[Depends(get_user)])
 
 
 def orm_create(cls, params: dict, repeat_msg='关键字重复'):
@@ -106,7 +143,7 @@ def orm_delete(cls, resource_id: Union[str, list, set]):
         session.commit()
 
 
-def paginate_query(sql, paginate, scalar=False, format_func=None, session=None):
+def paginate_query(sql, paginate: PaginateRequest, scalar=False, format_func=None, session=None):
     """
     统一分分页查询操作
     Args:

@@ -5,7 +5,7 @@ services:
     image: bitnami/clickhouse:23.4.2
     env_file: .env
     volumes:
-      - ./persistence/olap:/bitnami/clickhouse
+#      - ./persistence/olap:/bitnami/clickhouse
       - ./migrations/olap:/docker-entrypoint-initdb.d
     ports:
       - "8123:8123"
@@ -15,28 +15,22 @@ services:
     restart: always
     image: bitnami/postgresql:14.8.0
     env_file: .env
-    volumes:
-      - ./persistence/oltp:/bitnami/postgresql
+#    volumes:
+#      - ./persistence/oltp:/bitnami/postgresql
     ports:
       - "5432:5432"
-
-
-  zookeeper:
-    image: bitnami/zookeeper:3.8
-    env_file: .env
-    ports:
-      - "2181:2181"
 
   kafka:
     restart: always
     image: bitnami/kafka:3.4
     env_file: .env
-    ports:
-      - "9092:9092"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 #    volumes:
 #      - ./persistence/kafka:/bitnami/kafka
-    depends_on:
-      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
 
   redis:
     restart: always
@@ -51,9 +45,9 @@ services:
       context: ./
       dockerfile: Dockerfile
     env_file: .env
-#    volumes:
+    volumes:
 #      - ./migrations:/fast/migrations
-#      - ./logs:/fast/logs
+      - ./logs:/fast/logs
     ports:
       - "8000:8000"
-    command: "/bin/bash -c 'source ./initDB.sh && uvicorn start:app'"
+    command: "/bin/bash -c 'source ./initDB.sh && uvicorn main:app'"

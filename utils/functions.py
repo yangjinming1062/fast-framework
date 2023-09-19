@@ -28,38 +28,38 @@ def execute_sql(sql, *, fetchall: bool = False, scalar: bool = True, params=None
         fetchall: 是否查询多行数据，默认值为False
         scalar: 查询model时返回model实例，如果指定了查询的列则不需要，默认值为True
         params: 批量插入类操作时插入的数据，默认值为None
-        session: 执行SQL的session，默认不需要，会自动创建，但是如果有上下文需要使用相同的也可以传递
+        session: 执行SQL的session，默认不需要，会自动创建，但是如果使用了join则没法自动判断，需要明确传递
 
     Returns:
         当SQL是查询类语句时：返回列表、实例对象、Row对象
         当SQL是非查询类语句时：返回受影响的行数/错误消息/None, 是否执行成功
     """
-    tp_flag = not isinstance(session, Client)
+    is_oltp = not isinstance(session, Client)
     if sql.is_select:
         if session_flag := session is None:
             if sql.froms[0].name in _OLAP_TABLES:
-                tp_flag = False
+                is_oltp = False
                 session = Client.from_url(CONFIG.olap_uri)
             else:
                 session = Session(OLTPEngine)
     else:
         if session_flag := session is None:
             if sql.table.name in _OLAP_TABLES:
-                tp_flag = False
+                is_oltp = False
                 session = Client.from_url(CONFIG.oltp_uri)
             else:
                 session = Session(OLTPEngine)
     try:
         if sql.is_select:
-            if not tp_flag:
+            if not is_oltp:
                 sql = sql.compile(compile_kwargs={'literal_binds': True}).string
             executed = session.execute(sql)
             if fetchall:
-                result = executed.fetchall() if tp_flag else executed
+                result = executed.fetchall() if is_oltp else executed
                 if scalar:
                     result = [row[0] for row in result]
             else:
-                if tp_flag:
+                if is_oltp:
                     result = executed.first()
                 else:
                     if executed:
@@ -68,13 +68,13 @@ def execute_sql(sql, *, fetchall: bool = False, scalar: bool = True, params=None
                         return None
                 if scalar and result:
                     result = result[0]
-            if session_flag and tp_flag:
+            if session_flag and is_oltp:
                 # 通过expunge使实例可以脱离session访问
                 session.expunge_all()
             return result
         elif sql.is_insert:
             # 插入返回新增实例的ID
-            if tp_flag:
+            if is_oltp:
                 result = session.execute(sql, params) if params is not None else session.execute(sql)
                 session.flush()
                 if hasattr(result, 'inserted_primary_key_rows'):
@@ -99,18 +99,18 @@ def execute_sql(sql, *, fetchall: bool = False, scalar: bool = True, params=None
             else:
                 return 'SQL执行失败', False
     except IntegrityError as ex:
-        if tp_flag:
+        if is_oltp:
             session.rollback()
         logger.exception(ex)
         return ex.args[0], False
     except Exception as exx:
-        if tp_flag:
+        if is_oltp:
             session.rollback()
         logger.exception(exx)
         return str(exx), False
     finally:
         if session_flag:
-            if tp_flag:
+            if is_oltp:
                 session.commit()
                 session.close()
             else:

@@ -10,9 +10,12 @@ from datetime import datetime
 from ipaddress import IPv4Address
 
 import redis
+from clickhouse_driver import Client
 from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from sqlalchemy.engine import Row
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 
 from config import Configuration
 from defines import *
@@ -20,14 +23,7 @@ from utils import logger
 from .constants import Constants
 
 CONFIG = Configuration()
-
-_redis_pool = redis.ConnectionPool(
-    host=CONFIG.redis_host,
-    port=CONFIG.redis_port,
-    password=CONFIG.redis_password,
-    decode_responses=True,
-)
-REDIS = redis.Redis(connection_pool=_redis_pool)
+oltp_session_factory = scoped_session(sessionmaker(bind=OLTPEngine))
 
 
 # 单例基类
@@ -40,7 +36,22 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class Kafka(metaclass=Singleton):
+class RedisManager(metaclass=Singleton):
+
+    def __init__(self):
+        redis_config = {
+            'host': CONFIG.redis_host,
+            'port': CONFIG.redis_port,
+            'password': CONFIG.redis_password,
+            'decode_responses': True,
+        }
+        self.client = redis.Redis(connection_pool=redis.ConnectionPool(db=0, **redis_config))
+        self.client1 = redis.Redis(connection_pool=redis.ConnectionPool(db=1, **redis_config))
+        self.client2 = redis.Redis(connection_pool=redis.ConnectionPool(db=2, **redis_config))
+        self.client3 = redis.Redis(connection_pool=redis.ConnectionPool(db=3, **redis_config))
+
+
+class KafkaManager(metaclass=Singleton):
 
     def __init__(self):
         self._consumers = {}
@@ -117,6 +128,19 @@ class Kafka(metaclass=Singleton):
         producer = self.get_producer(topic)
         producer.produce(topic=topic, value=json.dumps(data, cls=JSONExtensionEncoder), callback=self.delivery_report)
         producer.poll(0)
+
+
+class SessionManager(metaclass=Singleton):
+    def __init__(self):
+        self.oltp = oltp_session_factory()
+        self.olap = Client.from_url(CONFIG.olap_uri)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.oltp.close()
+        self.olap.disconnect()
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

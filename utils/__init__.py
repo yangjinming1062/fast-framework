@@ -12,8 +12,8 @@ from loguru import logger
 
 from .classes import CONFIG
 from .classes import JSONExtensionEncoder
-from .classes import Kafka
-from .classes import REDIS
+from .classes import KafkaManager
+from .classes import RedisManager
 from .classes import Singleton
 from .constants import Constants
 from .functions import exceptions

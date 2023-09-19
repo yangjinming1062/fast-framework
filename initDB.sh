@@ -4,7 +4,7 @@ migrate() {
   echo "Init Migrations"
   mkdir -p ./migrations/oltp/versions  # 防止没有目录生成迁移文件失败
   mv ./migrations_init/* ./migrations/
-  sleep 10
+  sleep 3
   alembic -c ./migrations/oltp/alembic.ini revision --autogenerate
   alembic -c ./migrations/oltp/alembic.ini upgrade head
   python command.py init

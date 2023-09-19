@@ -1,6 +1,6 @@
 """
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : app.py
+File Name   : main.py
 Author      : jinming.yang
 Description : 程序的入口位置，通过该文件启动app程序
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

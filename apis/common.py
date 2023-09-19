@@ -205,7 +205,7 @@ def query_condition(sql, params: dict, column: Column, field_name=None, op_func=
     Returns:
         添加where条件后的SQL对象
     """
-    if (param := params.get(field_name or column.key)) is not None or op_type == 'datetime':
+    if param := params.get(field_name or column.key):
         if op_func:
             return sql.where(op_func(param))
         else:

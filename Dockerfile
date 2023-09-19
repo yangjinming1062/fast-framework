@@ -16,4 +16,4 @@ RUN mv migrations migrations_init
 EXPOSE 8000
 
 # 单独只启动后端接口服务
-CMD ["uvicorn", "start:app"]
+CMD ["uvicorn", "main:app"]

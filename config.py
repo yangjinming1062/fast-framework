@@ -31,13 +31,13 @@ class Configuration(BaseSettings):
     redis_port: int
     redis_password: str
     # KAFKA相关参数
-    kafka_host: str = host
+    kafka_host: str = Field(alias='KAFKA_HOST') or host
     kafka_port: int
-    kafka_consumer_timeout: int = Field(100)
+    kafka_consumer_timeout: int
     kafka_protocol: str = 'PLAINTEXT'
-    kafka_message_max_bytes: int = 1000000000
-    kafka_producer_queue_size: int = 1000
-    kafka_group: str = 'default'
+    kafka_message_max_bytes: int
+    kafka_producer_queue_size: int
+    kafka_group: str
     # JWT
     jwt_token_expire_days = 7
     jwt_secret = Field('DEMO_KEY')

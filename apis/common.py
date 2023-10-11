@@ -42,15 +42,15 @@ async def get_user(token: str = Depends(oauth2_scheme)):
 
 def get_router(path, name, skip_auth=False):
     """
-    Generate a router for the API with the given path and name.
+    使用给定的路径和名称为API生成一个路由器。
 
     Args:
-        path (str): The path for the API.
-        name (str): The name for the API.
-        skip_auth (bool): Skip auth.
+        path (str): 路由的路径。
+        name (str): 路由的名称。
+        skip_auth (bool): 是否跳过鉴权。
 
     Returns:
-        APIRouter: The generated router.
+        APIRouter: FastAPI的路由。
     """
     url_prefix = f'/{path.replace(".", "/")}'
     if skip_auth:
@@ -61,29 +61,27 @@ def get_router(path, name, skip_auth=False):
 
 def orm_create(cls, params, repeat_msg='关键字重复') -> str:
     """
-    Create a data instance.
-
+    创建数据实例。
     Args:
-        cls: The ORM class definition.
-        params (BaseModel): The parameters.
-        repeat_msg (str): The response when there is a duplicate record.
-
+        cls: ORM类定义。
+        params (BaseModel): 请求参数。
+        repeat_msg (str): 数据重复时的错误消息。
     Returns:
-        The ID of the newly created data.
+        str: 新增数据的ID。
     """
-    # Dump the model into a dictionary
+    # 将模型转储到字典中
     params = params.model_dump()
-    # Set the 'updated_at' field to the current datetime
+    # 因为updated_at在定义时是可选的，所以要加上默认值
     params['updated_at'] = datetime.now()
-    # Filter out the parameters that are not part of the class columns
+    # 剔除掉不属于该ORM类的参数
     _params = {k: v for k, v in params.items() if k in cls.get_columns()}
-    # Execute the SQL insert statement
+    # 执行SQL插入语句
     result, flag = execute_sql(insert(cls).values(**_params))
-    # Check the result and return the ID if successful
+    # 检查结果，如果成功则返回ID
     if flag:
         return result
     else:
-        # Raise an exception if there is a duplicate record
+        # 如果存在重复记录，则返回repeat_msg，否则按照默认的错误信息
         if result.lower().find('duplicate') > 0:
             raise HTTPException(422, repeat_msg)
         else:
@@ -92,26 +90,24 @@ def orm_create(cls, params, repeat_msg='关键字重复') -> str:
 
 def orm_update(cls, resource_id, params, error_msg='无效输入'):
     """
-    Update the ORM data.
-
+    更新ORM数据。
     Args:
-        cls: The ORM class definition.
-        resource_id (str): The resource ID.
-        params (BaseModel): The updated data.
-        error_msg (str): The response message when update fails.
-
+        cls: ORM类定义。
+        resource_id (str): 数据的ID。
+        params (BaseModel): 更新参数。
+        error_msg (str): 更新失败时的错误消息。
     Returns:
         None
     """
-    # Dump the model and exclude unset fields
+    # 转储模型并排除未设置的字段
     params = params.model_dump(exclude_unset=True)
-    # Set the 'updated_at' field to the current datetime
+    # 因为updated_at在定义时是可选的，所以要加上默认值
     params['updated_at'] = datetime.now()
-    # Only include the parameters that are in the class columns
+    # 剔除掉不属于该ORM类的参数
     _params = {k: v for k, v in params.items() if k in cls.get_columns()}
-    # Execute the SQL update query
+    # 执行SQL更新语句
     result, flag = execute_sql(update(cls).where(cls.id == resource_id).values(**_params))
-    # Check the result and raise appropriate exceptions
+    # 检查执行结果
     if flag and not result:
         raise HTTPException(404, '未找到对应资源')
     elif not flag:
@@ -120,18 +116,16 @@ def orm_update(cls, resource_id, params, error_msg='无效输入'):
 
 def orm_delete(cls, data):
     """
-    Delete data instance.
-
+    删除数据实例。
     Args:
-        cls: ORM class definition.
-        data (List[str]): Resource ID.
-
+        cls: ORM类定义。
+        data (List[str]): 待删除的数据ID列表。
     Returns:
         None
     """
     with DatabaseManager() as db:
         try:
-            # Delete instances in batch if resource_id is a list or set
+            # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.oltp.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.oltp.delete(instance)
         except Exception as ex:
@@ -144,18 +138,17 @@ def orm_delete(cls, data):
 
 def paginate_query(sql, paginate, scalar=False, format_func=None, session=None, with_total=False):
     """
-    Paginate a query result.
-
+    分页查询结果。
     Args:
-        sql (Select): The SQL query.
-        paginate (PaginateRequest): The pagination parameters.
-        scalar (bool): Whether to return scalars.
-        format_func: Function to format the query result.
-        session: The session to use for special cases.
-        with_total (bool): Whether the last column in the query result is the total count.
+        sql (Select): SQL查询。
+        paginate (PaginateRequest): 分页参数。
+        scalar (bool): 执行查询时是否返回结果的第一列。
+        format_func: 用于格式化查询结果的函数。
+        session: 无法自动判断查询数据库时需要指定的查询连接。
+        with_total (bool): 查询结果中的最后一列是否为总数。
 
     Returns:
-        A dictionary with the total count and the query result data.
+        包含总计数和查询结果数据的词典。
     """
     # Calculate the total count of rows
     if not with_total:
@@ -191,16 +184,16 @@ def paginate_query(sql, paginate, scalar=False, format_func=None, session=None, 
 
 def add_filter(sql, column, value, op_type):
     """
-    Adds a query condition to the SQL object.
+    向SQL对象添加查询条件。
 
     Args:
-        sql (Select): SQLAlchemy SQL statement object.
-        column (Column): The column to query.
-        value: The query parameters.
-        op_type: The operation type.
+        sql (Select): SQLAlchemy SQL语句对象。
+        column (Column): 要查询的列。
+        value: 查询参数。
+        op_type: 操作类型。
 
     Returns:
-        The SQL object with the added where condition.
+        添加了where条件的SQL对象。
     """
     if value is not None:
         if op_type == 'like':

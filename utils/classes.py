@@ -43,17 +43,15 @@ class RedisManager(metaclass=Singleton):
     @staticmethod
     def get_client(db=0) -> redis.Redis:
         """
-        Returns a Redis client for the specified database.
-
+        获取Redis的client。
         Args:
-            db (int): The database number.
-
+            db (int): redis的数据库序号，默认0。
         Returns:
-            redis.Redis: The Redis client for the specified database.
+            redis.Redis: client实例。
         """
-        # Check if the client for the specified database already exists
+        # 每个数据库复用同一个Client，判断是否存在
         if db not in RedisManager._CLIENTS:
-            # Create a new Redis client and add it to the clients dictionary
+            # 添加一个指定db的client实例
             redis_config = {
                 'host': CONFIG.redis_host,
                 'port': CONFIG.redis_port,
@@ -62,7 +60,7 @@ class RedisManager(metaclass=Singleton):
             }
             RedisManager._CLIENTS[db] = redis.Redis(connection_pool=redis.ConnectionPool(db=db, **redis_config))
 
-        # Return the Redis client for the specified database
+        # 返回指定db的client实例
         return RedisManager._CLIENTS[db]
 
 
@@ -73,80 +71,68 @@ class KafkaManager(metaclass=Singleton):
     @staticmethod
     def get_consumer(*topic) -> Consumer:
         """
-        Get or create a consumer for the specified topic.
-
+        创建一个消费者。
         Args:
-            topic: The name of the topic.
-
+            topic: 消费的主题都有哪些。
         Returns:
-            The consumer object.
+            Consumer: 消费者实例。
         """
-        # Check if consumer already exists for the topic
+        # 检查指定主题是否已经存在（这里topic其实是一个tuple）
         if topic not in KafkaManager.CONSUMERS:
-            # Create a new consumer for the topic
+            # 不存在则新建一个消费者
             KafkaManager.CONSUMERS[topic] = Consumer(CONFIG.kafka_consumer_config)
             KafkaManager.CONSUMERS[topic].subscribe(list(topic))
 
-        # Return the consumer for the topic
+        # 返回消费者实例
         return KafkaManager.CONSUMERS[topic]
 
     @staticmethod
     def get_producer(topic):
         """
-        Get the producer object for the given topic.
-
+        创建一个生产者。
         Args:
-            topic (str): The name of the topic.
-
+            topic (str): 主题的名称。
         Returns:
-            Producer: The producer object.
+            Producer: 生产者实例。
         """
-        # Check if the producer object for the given topic already exists.
+        # 检查给定主题的生产者对象是否已经存在
         if topic not in KafkaManager.PRODUCERS:
-            # Create a new producer object with the kafka_producer_config.
+            # 创建一个新的生产者对象
             KafkaManager.PRODUCERS[topic] = Producer(CONFIG.kafka_producer_config)
 
-        # Return the producer object for the given topic.
+        # 返回给定主题的生产者对象
         return KafkaManager.PRODUCERS[topic]
 
     @staticmethod
     def delivery_report(err, msg):
         """
-        Callback function to get the status of a message when it is written to Kafka.
-
+        回调函数，用于获取消息写入Kafka时的状态。
         Args:
-            err (str): The error message, if any.
-            msg (str): The message that was sent to Kafka.
-
+            err (str): 错误消息（如果有）。
+            msg (str): 发给Kafka的信息。
         Returns:
             None
-
         """
         if err is not None:
-            logger.error('Message delivery failed', err)
+            logger.error('Kafka发生失败', err)
 
     @staticmethod
-    def consume(topic, limit=None):
+    def consume(*topic, limit=None):
         """
-        Consume data from a Kafka topic.
-
+        消费指定主题的数据。
         Args:
-            topic (str | tuple): The name of the topic to consume data from.
-            limit (int, optional): The number of messages to consume in a batch.
-                Default is None, which means consume a single message.
-
+            topic: 需要消费的主题。
+            limit (int, optional): 批处理中要使用的消息数。默认值为None，表示使用单个消息。
         Returns:
-            list or dict: If `limit` is specified, returns a list of JSON-decoded messages.
-                If `limit` is None, returns a single JSON-decoded message.
-
+            list or dict: 如果指定了“limit”，则返回JSON解码消息的列表。如果“limit”为None，则返回单个JSON解码消息。
         """
         consumer = KafkaManager.get_consumer(topic)
         if limit:
-            # Consume a batch of messages with a timeout. Return an empty list if no messages are received.
+            # 批量消费
             msgs = consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout)
             return [json.loads(msg.value().decode('utf-8')) for msg in msgs]
         else:
-            # Continuously poll for messages. Return the first non-empty message received.
+            # 持续轮询，返回收到的第一条非空消息
             while True:
                 msg = consumer.poll(1.0)
                 if msg is None or msg.error():
@@ -156,24 +142,22 @@ class KafkaManager(metaclass=Singleton):
     @staticmethod
     def produce(topic, data):
         """
-        Produces data to a specified topic.
-
+        生成指定主题的数据。
         Args:
-            topic (str): The name of the topic.
-            data (dict): The data to be sent.
-
+            topic (str): 主题的名称。
+            data (dict): 要发送的数据。
         Returns:
             None
         """
-        # Get the producer for the specified topic
+        # 获取指定主题的生产者
         producer = KafkaManager.get_producer(topic)
-        # Produce the data to the topic
+        # 生成主题的数据
         producer.produce(
             topic=topic,
             value=json.dumps(data, cls=JSONExtensionEncoder),
             callback=KafkaManager.delivery_report
         )
-        # Poll the producer to ensure delivery
+        # 确保交付
         producer.poll(0)
 
 
@@ -184,24 +168,22 @@ class DatabaseManager:
 
     def __enter__(self):
         """
-        Enter method for context manager.
-
+        with的进入方法，返回一个上下文对象。
         Returns:
-            The context manager object itself.
+            数据管理器
         """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Close the connections to the OLTP and OLAP databases when exiting the context.
-
+        当离开上下文时关闭数据库连接。
         Args:
             exc_type (type): The type of the exception that occurred, if any.
             exc_value (Exception): The exception object that was raised, if any.
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
-        self.oltp.close()  # Close the connection to the OLTP database
-        self.olap.disconnect()  # Disconnect from the OLAP database
+        self.oltp.close()
+        self.olap.disconnect()
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

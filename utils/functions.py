@@ -24,23 +24,22 @@ OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
 
 def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
     """
-    Executes SQL statements.
-
+    执行SQL语句。
     Args:
-        sql: SQLAlchemy SQL statement object
-        fetchall (bool): Whether to fetch all rows, defaults to False
-        scalar (bool): Whether to return model instances when querying models, defaults to True
-        params: Data to be inserted in bulk insert operations, defaults to None
-        session: Session to execute the SQL statement, defaults to None
-
+        sql: SQLAlchemy的select/insert/update/delete语句。
+        fetchall (bool): 是否拉取全部数据，默认是False。
+        scalar (bool): 是否需要对查询结果执行scalar，查询Model对象或者单独一列时传True，查询多列时传False，默认True。
+        params: 批量插入时传list，单独插入时传dict。
+        session: 执行SQL对象的数据库连接，默认None时会根据SQL对象来判断是OLAP还是OLTP自动创建数据库连接，但是SQL对象使用了join则需要明确指定,
+            默认是None。
     Returns:
-        When the SQL statement is a query:
-            - List of rows, model instances or Row objects
-        When the SQL statement is not a query:
-            - Number of affected rows, error message or None, and a flag indicating whether the execution was successful
+        当SQL对象是查询时:
+            - 查询对象或者查询的列表。
+        当SQL对象非查询时:
+            - 返回执行结果及是否执行成功的标识。
     """
     is_oltp = not isinstance(session, Client)
-    # Determine the session and connection based on the SQL statement
+    # 根据SQL对象判断该使用哪个数据库连接
     if sql.is_select:
         if session_flag := session is None:
             if sql.froms[0].name in _OLAP_TABLES:
@@ -58,7 +57,6 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
 
     try:
         if sql.is_select:
-            # Execute the select statement
             if not is_oltp:
                 sql = sql.compile(compile_kwargs={'literal_binds': True}).string
             executed = session.execute(sql)
@@ -76,12 +74,11 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                         return None
                 if scalar and result:
                     result = result[0]
-            # Expunge the instances from the session if necessary
+            # 使查询结果脱离当前session，不然离开当前方法后无法访问里面的数据
             if session_flag and is_oltp:
                 session.expunge_all()
             return result
         elif sql.is_insert:
-            # Insert statement, return the inserted ID
             if is_oltp:
                 result = session.execute(sql, params) if params else session.execute(sql)
                 session.flush()
@@ -91,6 +88,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                 else:
                     return '', True
             else:
+                # ClickHouse目前没有直接支持，需要将SQL对象编译成SQL字符串再通过Client去执行
                 sql = sql.compile(compile_kwargs={'literal_binds': True}).string
                 if params:
                     sql = sql.split('VALUES')[0] + 'VALUES'
@@ -99,7 +97,6 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                     session.execute(sql)
                 return '', True
         else:
-            # Update or delete statement, return the number of affected rows
             result = session.execute(sql)
             session.flush()
             if result:
@@ -127,14 +124,11 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
 
 def exceptions(default=None):
     """
-    Decorator: Exception handling
-
+    装饰器: 异常捕获。
     Args:
-        default: The value to return when an exception occurs
-
+        default: 当发生异常时返回的值。
     Returns:
-        The return value of the decorated function if no exception occurs,
-        otherwise it returns the default value
+        返回结果取决于执行的函数是否发生异常，如果发生异常则返回default的值，没有则返回函数本身的执行结果。
     """
 
     def decorator(function):
@@ -153,11 +147,11 @@ def exceptions(default=None):
 
 def generate_key(*args):
     """
-    Generate a 12-character key based on the given source.
+    根据输入的参数生成一个12个字符的key。
     Args:
-        *args: Variable number of arguments to generate the key from.
+        *args: 用于生成Key的参数。
     Returns:
-        str: The generated key.
+        str: 生成的Key。
     """
     if args:
         source = '-'.join(list(map(str, args)))

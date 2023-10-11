@@ -54,15 +54,13 @@ class ModelBase(DeclarativeBase):
         """
         return getattr(cls, columns) if isinstance(columns, str) else [getattr(cls, name) for name in columns]
 
-    def json(self, excluded: set = None) -> dict:
+    def json(self, excluded=None) -> dict:
         """
-        Convert the ORM instance to a serializable dictionary.
-
+        将ORM实例转换为可序列化字典。
         Args:
-            excluded: A set of columns to be excluded from the dictionary.
-
+            excluded (set | None): 要从结果中排除的列名。
         Returns:
-            dict: The serialized dictionary.
+            dict: 序列化结果。
         """
         result = {}
         ignored_fields = excluded or set()
@@ -76,19 +74,18 @@ class ModelBase(DeclarativeBase):
             if prop.key.startswith('_') or prop.key in ignored_fields:
                 continue
             value = getattr(self, prop.key)
-            # If the value is a list of ORM instances, recursively call the json() method on each item
+            # 如果该值是ORM实例的列表，则对每个项递归调用json（）方法
             if isinstance(value, InstrumentedList):
                 result[prop.key] = [item.json() for item in value]
-            # If the value is another ORM instance, recursively call the json() method
+            # 如果该值是另一个ORM实例，则递归调用json（）方法
             elif isinstance(value, ModelBase):
                 result[prop.key] = value.json()
-            # If the column type is JSON, set the value directly
+            # 如果列类型为JSON，则直接返回json内容
             elif isinstance(prop.columns[0].type, JSON):
                 result[prop.key] = value if value else None
-            # If the column type is DateTime, set the value to '-' if it is None
+            # 如果列类型为DateTime，当日期为空时返回'-'字符串
             elif isinstance(prop.columns[0].type, DateTime):
                 result[prop.key] = value if value else '-'
-            # Otherwise, set the value directly
             else:
                 result[prop.key] = value
 
@@ -111,17 +108,15 @@ class OLAPModelBase(ModelBase):
     __abstract__ = True
 
     @classmethod
-    def add_ip_filter(cls, sql, column: Column, ip: str):
+    def add_ip_filter(cls, sql, column, ip):
         """
-        Execute IP column retrieval.
-
+        添加IP类型列的查询条件。
         Args:
-            sql: Query statement
-            column: Column to query
-            ip: Search condition
-
+            sql: SQL对象。
+            column (Column): 需要查询的列。
+            ip (str): 需要查询的IP。
         Returns:
-            SQL object with the added search condition
+            添加了搜索条件的SQL对象。
         """
         if '*' in ip:
             ip = ip.replace('*', '%')

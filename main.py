@@ -14,15 +14,12 @@ from utils import generate_key
 
 def create_app():
     """
-    Creates and configures the FastAPI application.
-
+    创建并配置FastAPI的APP。
     Returns:
-        FastAPI: The configured FastAPI application.
+        FastAPI: 添加上路由信息的APP。
     """
-    # Create the FastAPI application
     _app = FastAPI(title='FastAPICli', description='', version='main', generate_unique_id_function=generate_key)
 
-    # Include the routers in the application
     for router in ROUTERS:
         _app.include_router(router)
 

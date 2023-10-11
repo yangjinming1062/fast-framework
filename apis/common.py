@@ -62,10 +62,12 @@ def get_router(path, name, skip_auth=False):
 def orm_create(cls, params, repeat_msg='关键字重复') -> str:
     """
     创建数据实例。
+
     Args:
         cls: ORM类定义。
         params (BaseModel): 请求参数。
         repeat_msg (str): 数据重复时的错误消息。
+
     Returns:
         str: 新增数据的ID。
     """
@@ -91,11 +93,13 @@ def orm_create(cls, params, repeat_msg='关键字重复') -> str:
 def orm_update(cls, resource_id, params, error_msg='无效输入'):
     """
     更新ORM数据。
+
     Args:
         cls: ORM类定义。
         resource_id (str): 数据的ID。
         params (BaseModel): 更新参数。
         error_msg (str): 更新失败时的错误消息。
+
     Returns:
         None
     """
@@ -117,9 +121,11 @@ def orm_update(cls, resource_id, params, error_msg='无效输入'):
 def orm_delete(cls, data):
     """
     删除数据实例。
+
     Args:
         cls: ORM类定义。
         data (List[str]): 待删除的数据ID列表。
+
     Returns:
         None
     """
@@ -139,6 +145,7 @@ def orm_delete(cls, data):
 def paginate_query(sql, paginate, scalar=False, format_func=None, session=None, with_total=False):
     """
     分页查询结果。
+
     Args:
         sql (Select): SQL查询。
         paginate (PaginateRequest): 分页参数。

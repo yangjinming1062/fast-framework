@@ -25,6 +25,7 @@ OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
 def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
     """
     执行SQL语句。
+
     Args:
         sql: SQLAlchemy的select/insert/update/delete语句。
         fetchall (bool): 是否拉取全部数据，默认是False。
@@ -32,6 +33,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
         params: 批量插入时传list，单独插入时传dict。
         session: 执行SQL对象的数据库连接，默认None时会根据SQL对象来判断是OLAP还是OLTP自动创建数据库连接，但是SQL对象使用了join则需要明确指定,
             默认是None。
+
     Returns:
         当SQL对象是查询时:
             - 查询对象或者查询的列表。
@@ -125,8 +127,10 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
 def exceptions(default=None):
     """
     装饰器: 异常捕获。
+
     Args:
         default: 当发生异常时返回的值。
+
     Returns:
         返回结果取决于执行的函数是否发生异常，如果发生异常则返回default的值，没有则返回函数本身的执行结果。
     """
@@ -148,8 +152,10 @@ def exceptions(default=None):
 def generate_key(*args):
     """
     根据输入的参数生成一个12个字符的key。
+
     Args:
         *args: 用于生成Key的参数。
+
     Returns:
         str: 生成的Key。
     """

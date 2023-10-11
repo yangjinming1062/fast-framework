@@ -17,6 +17,7 @@ from utils import exceptions
 def init_user(account, username, password):
     """
     添加初始用户
+
     Returns:
 
     """
@@ -26,7 +27,7 @@ def init_user(account, username, password):
 def init_database():
     """
     初始化数据库
-    TODO: 迁移只负责建表，如果需要向数据库中添加初始数据则通过该命令执行
+
     Returns:
 
     """

@@ -15,6 +15,7 @@ from utils import generate_key
 def create_app():
     """
     创建并配置FastAPI的APP。
+
     Returns:
         FastAPI: 添加上路由信息的APP。
     """

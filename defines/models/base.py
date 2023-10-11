@@ -57,20 +57,22 @@ class ModelBase(DeclarativeBase):
     def json(self, excluded=None) -> dict:
         """
         将ORM实例转换为可序列化字典。
+
         Args:
             excluded (set | None): 要从结果中排除的列名。
+
         Returns:
             dict: 序列化结果。
         """
         result = {}
         ignored_fields = excluded or set()
 
-        # Iterate over the properties of the ORM instance
+        # 遍历ORM实例的属性
         for prop in self.__mapper__.iterate_properties:
-            # Skip properties that are not columns
+            # 跳过非列的属性
             if not isinstance(prop, ColumnProperty):
                 continue
-            # Skip properties that start with '_' or are in the ignored_fields set
+            # 跳过以“_”开头或位于ignored_fields集中的属性
             if prop.key.startswith('_') or prop.key in ignored_fields:
                 continue
             value = getattr(self, prop.key)
@@ -111,10 +113,12 @@ class OLAPModelBase(ModelBase):
     def add_ip_filter(cls, sql, column, ip):
         """
         添加IP类型列的查询条件。
+
         Args:
             sql: SQL对象。
             column (Column): 需要查询的列。
             ip (str): 需要查询的IP。
+
         Returns:
             添加了搜索条件的SQL对象。
         """

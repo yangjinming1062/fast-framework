@@ -44,8 +44,10 @@ class RedisManager(metaclass=Singleton):
     def get_client(db=0) -> redis.Redis:
         """
         获取Redis的client。
+
         Args:
             db (int): redis的数据库序号，默认0。
+
         Returns:
             redis.Redis: client实例。
         """
@@ -72,8 +74,10 @@ class KafkaManager(metaclass=Singleton):
     def get_consumer(*topic) -> Consumer:
         """
         创建一个消费者。
+
         Args:
             topic: 消费的主题都有哪些。
+
         Returns:
             Consumer: 消费者实例。
         """
@@ -90,8 +94,10 @@ class KafkaManager(metaclass=Singleton):
     def get_producer(topic):
         """
         创建一个生产者。
+
         Args:
             topic (str): 主题的名称。
+
         Returns:
             Producer: 生产者实例。
         """
@@ -107,9 +113,11 @@ class KafkaManager(metaclass=Singleton):
     def delivery_report(err, msg):
         """
         回调函数，用于获取消息写入Kafka时的状态。
+
         Args:
             err (str): 错误消息（如果有）。
             msg (str): 发给Kafka的信息。
+
         Returns:
             None
         """
@@ -120,9 +128,11 @@ class KafkaManager(metaclass=Singleton):
     def consume(*topic, limit=None):
         """
         消费指定主题的数据。
+
         Args:
             topic: 需要消费的主题。
             limit (int, optional): 批处理中要使用的消息数。默认值为None，表示使用单个消息。
+
         Returns:
             list or dict: 如果指定了“limit”，则返回JSON解码消息的列表。如果“limit”为None，则返回单个JSON解码消息。
         """
@@ -143,9 +153,11 @@ class KafkaManager(metaclass=Singleton):
     def produce(topic, data):
         """
         生成指定主题的数据。
+
         Args:
             topic (str): 主题的名称。
             data (dict): 要发送的数据。
+
         Returns:
             None
         """
@@ -169,6 +181,7 @@ class DatabaseManager:
     def __enter__(self):
         """
         with的进入方法，返回一个上下文对象。
+
         Returns:
             数据管理器
         """
@@ -177,6 +190,7 @@ class DatabaseManager:
     def __exit__(self, exc_type, exc_value, traceback):
         """
         当离开上下文时关闭数据库连接。
+
         Args:
             exc_type (type): The type of the exception that occurred, if any.
             exc_value (Exception): The exception object that was raised, if any.

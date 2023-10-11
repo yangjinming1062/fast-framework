@@ -15,23 +15,23 @@ class Configuration(BaseSettings):
     # 默认IP
     host: str = Field('127.0.0.1', env='HOST')
     # OLTP数据库相关参数
-    oltp_host: str = Field(host)
+    oltp_host: str = host
     oltp_port: int = Field(5432)
     oltp_user: str = Field(alias='POSTGRESQL_USERNAME')
     oltp_pwd: str = Field(alias='POSTGRESQL_PASSWORD')
     oltp_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
-    olap_host: str = Field(host)
+    olap_host: str = host
     olap_port: int = Field(9000)
     olap_user: str = Field(alias='CLICKHOUSE_ADMIN_USER')
     olap_pwd: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
     olap_db: str = Field(alias='CLICKHOUSE_DATABASE')
     # REDIS相关参数
-    redis_host: str = Field(host)
+    redis_host: str = host
     redis_port: int = Field(6379)
     redis_password: str
     # KAFKA相关参数
-    kafka_host: str = Field(host)
+    kafka_host: str = host
     kafka_port: int = Field(9092)
     kafka_consumer_timeout: int = Field(10)
     kafka_protocol: str = 'PLAINTEXT'

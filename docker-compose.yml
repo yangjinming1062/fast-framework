@@ -10,6 +10,8 @@ services:
     ports:
       - "8123:8123"
       - "9000:9000"
+    depends_on:
+      - backend  # 需要backend先执行了initDB.sh把迁移目录拷贝出来，如果宿主机有了则可以不依赖
 
   oltp:
     restart: always
@@ -46,8 +48,10 @@ services:
       dockerfile: Dockerfile
     env_file: .env
     volumes:
-#      - ./migrations:/fast/migrations
+      - ./migrations:/fast/migrations
       - ./logs:/fast/logs
     ports:
-      - "8000:8000"
-    command: "/bin/bash -c 'source ./initDB.sh && uvicorn main:app'"
+      - "8080:8080"
+    command: "/bin/bash -c 'source ./initDB.sh && uvicorn main:app --port=8080'"
+    depends_on:
+      - oltp  # initDB.sh需要初始化数据库

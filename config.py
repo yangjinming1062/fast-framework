@@ -11,33 +11,33 @@ from pydantic_settings import SettingsConfigDict
 
 
 class Configuration(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
+    model_config = SettingsConfigDict(env_file=('.env', 'dev.env'), env_file_encoding='utf-8', extra='ignore')
     # 默认IP
     host: str = Field('127.0.0.1', env='HOST')
     # OLTP数据库相关参数
-    oltp_host: str = Field(alias='OLTP_HOST') or host
-    oltp_port: int
+    oltp_host: str = Field(host)
+    oltp_port: int = Field(5432)
     oltp_user: str = Field(alias='POSTGRESQL_USERNAME')
     oltp_pwd: str = Field(alias='POSTGRESQL_PASSWORD')
     oltp_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
-    olap_host: str = Field(alias='OLAP_HOST') or host
-    olap_port: int
+    olap_host: str = Field(host)
+    olap_port: int = Field(9000)
     olap_user: str = Field(alias='CLICKHOUSE_ADMIN_USER')
     olap_pwd: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
     olap_db: str = Field(alias='CLICKHOUSE_DATABASE')
     # REDIS相关参数
-    redis_host: str = host
-    redis_port: int
+    redis_host: str = Field(host)
+    redis_port: int = Field(6379)
     redis_password: str
     # KAFKA相关参数
-    kafka_host: str = Field(alias='KAFKA_HOST') or host
-    kafka_port: int
-    kafka_consumer_timeout: int
+    kafka_host: str = Field(host)
+    kafka_port: int = Field(9092)
+    kafka_consumer_timeout: int = Field(10)
     kafka_protocol: str = 'PLAINTEXT'
     kafka_message_max_bytes: int
-    kafka_producer_queue_size: int
-    kafka_group: str
+    kafka_producer_queue_size: int = Field(100)
+    kafka_group: str = Field('demo')
     # JWT
     jwt_token_expire_days = 7
     jwt_secret = Field('DEMO_KEY')
@@ -46,15 +46,11 @@ class Configuration(BaseSettings):
 
     @property
     def oltp_uri(self):
-        return f'postgresql://{self.oltp_user}:{self.oltp_pwd}@{self.oltp_host}:{self.oltp_port}/{self.oltp_db}'
+        return f'postgresql+psycopg://{self.oltp_user}:{self.oltp_pwd}@{self.oltp_host}:{self.oltp_port}/{self.oltp_db}'
 
     @property
     def olap_uri(self):
         return f'clickhouse://{self.olap_user}:{self.olap_pwd}@{self.olap_host}:{self.olap_port}/{self.olap_db}'
-
-    @property
-    def redis_uri(self):
-        return f'redis://{self.redis_host}:{self.redis_port}/{self.redis_password}'
 
     @property
     def kafka_server(self):

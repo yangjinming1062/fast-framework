@@ -5,19 +5,15 @@ Author      : jinming.yang
 Description : 在__init__.py中统一导入
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
-from .base import ModelTemplate
-from .base import OLAPEngine
+from .base import ModelBase
 from .base import OLAPModelBase
-from .base import OLTPEngine
 from .base import OLTPModelBase
 from .system import User
 
 _base = [
-    'ModelTemplate',
-    'OLAPEngine',
+    'ModelBase',
     'OLAPModelBase',
     'OLAPModelsDict',
-    'OLTPEngine',
     'OLTPModelBase',
     'OLTPModelsDict',
 ]

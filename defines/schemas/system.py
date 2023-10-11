@@ -2,14 +2,7 @@ from .base import *
 from ..enums import *
 
 
-class LoginResponse(BaseModel):
-    username: str
-    role: RoleEnum
-    token_type: str
-    access_token: str
-
-
-class UserBase(SchemaBase):
+class UserBaseSchema(BaseSchema):
     account: str
     username: str
     role: RoleEnum
@@ -18,7 +11,14 @@ class UserBase(SchemaBase):
     email: str
 
 
-class UserCreateRequest(SchemaBase):
+class LoginResponse(BaseModel):
+    username: str
+    role: RoleEnum
+    token_type: str
+    access_token: str
+
+
+class UserCreateRequest(BaseModel):
     account: str
     username: str
     password: str
@@ -26,11 +26,11 @@ class UserCreateRequest(SchemaBase):
     email: str
 
 
-class UserUpdateRequest(SchemaBase):
-    account: str | None
-    username: str | None
-    phone: str | None
-    email: str | None
+class UserUpdateRequest(BaseModel):
+    account: str | None = None
+    username: str | None = None
+    phone: str | None = None
+    email: str | None = None
 
 
 class UsersRequest(PaginateRequest):
@@ -41,4 +41,4 @@ class UsersRequest(PaginateRequest):
 
 
 class UsersResponse(PaginateResponse):
-    data: List[UserBase]
+    data: List[UserBaseSchema]

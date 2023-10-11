@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua
 COPY . .
 RUN mv migrations migrations_init
 
-EXPOSE 8000
+EXPOSE 8080
 
 # 单独只启动后端接口服务
-CMD ["uvicorn", "main:app"]
+CMD ["uvicorn", "main:app", "--port=8080"]

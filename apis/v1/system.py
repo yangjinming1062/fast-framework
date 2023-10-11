@@ -1,3 +1,4 @@
+from fastapi import Query
 from sqlalchemy import true
 
 from ..common import *
@@ -5,11 +6,8 @@ from ..common import *
 router = get_router(__name__, '系统管理')
 
 
-@router.get('/users', response_model=UsersResponse)
-def get_users(params: UsersRequest = Depends()):
-    """
-    用户列表
-    """
+@router.get('/users', summary='用户列表')
+def get_users(params: UsersRequest) -> UsersResponse:
     sql = (
         select(
             User.id,
@@ -28,32 +26,21 @@ def get_users(params: UsersRequest = Depends()):
     return paginate_query(sql, params, False)
 
 
-@router.post('/users', status_code=201)
+@router.post('/users', status_code=201, summary='新建用户')
 def post_user(params: UserCreateRequest):
-    """
-    新建用户
-    """
-    params = params.model_dump()
-    params['password'] = User.generate_hash(params['password'])
+    params.password = User.generate_hash(params.password)
     return orm_create(User, params)
 
 
-@router.patch('/users/{uid}', status_code=204)
-def patch_user(uid, params: UserUpdateRequest):
-    """
-    编辑用户
-    """
-    return orm_update(User, uid, params.model_dump())
+@router.patch('/users/{user_id}', status_code=204, summary='编辑用户')
+def patch_user(user_id, params: UserUpdateRequest):
+    return orm_update(User, user_id, params)
 
 
-@router.delete('/users', status_code=204)
-def delete_user(params: IDSchema, session: SessionManager = Depends()):
-    """
-    删除用户
-    """
-    for uid in params.id:
-        user = session.oltp.get(User, uid)
+@router.delete('/users', status_code=204, summary='删除用户')
+def delete_user(params: List[str] = Query(), db: DatabaseManager = Depends()):
+    for uid in params:
+        user = db.oltp.get(User, uid)
         if user.role != RoleEnum.Admin:
             user.valid = False
-            user.credential.clear()
-            session.oltp.commit()
+            db.oltp.commit()

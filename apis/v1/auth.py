@@ -13,14 +13,14 @@ def _create_token(identity):
     return jwt.encode(to_encode, CONFIG.jwt_secret, algorithm=ALGORITHM)
 
 
-@router.post("/login", response_model=LoginResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@router.post('/login')
+async def login(form_data: OAuth2PasswordRequestForm = Depends()) -> LoginResponse:
     if user := execute_sql(select(User).where(User.account == form_data.username), fetchall=False):
         if user.check_password(form_data.password):
-            return {
+            return LoginResponse(**{
                 'username': user.username,
                 'role': user.role,
                 'token_type': 'bearer',
                 'access_token': _create_token(identity=user.id),
-            }
+            })
     raise HTTPException(403, '用户名或密码错误', headers={'WWW-Authenticate': 'Bearer'})

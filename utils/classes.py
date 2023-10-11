@@ -5,14 +5,15 @@ Author      : jinming.yang@qingteng.cn
 Description : 工具类定义
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
+import base64
 import json
-from datetime import datetime
 from ipaddress import IPv4Address
 
 import redis
 from clickhouse_driver import Client
 from confluent_kafka import Consumer
 from confluent_kafka import Producer
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
@@ -23,10 +24,10 @@ from utils import logger
 from .constants import Constants
 
 CONFIG = Configuration()
-oltp_session_factory = scoped_session(sessionmaker(bind=OLTPEngine))
+OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
+OLTP_SESSION_FACTORY = scoped_session(sessionmaker(bind=OLTP_ENGINE))
 
 
-# 单例基类
 class Singleton(type):
     _instances = {}
 
@@ -37,110 +38,170 @@ class Singleton(type):
 
 
 class RedisManager(metaclass=Singleton):
+    _CLIENTS = {}
 
-    def __init__(self):
-        redis_config = {
-            'host': CONFIG.redis_host,
-            'port': CONFIG.redis_port,
-            'password': CONFIG.redis_password,
-            'decode_responses': True,
-        }
-        self.client = redis.Redis(connection_pool=redis.ConnectionPool(db=0, **redis_config))
-        self.client1 = redis.Redis(connection_pool=redis.ConnectionPool(db=1, **redis_config))
-        self.client2 = redis.Redis(connection_pool=redis.ConnectionPool(db=2, **redis_config))
-        self.client3 = redis.Redis(connection_pool=redis.ConnectionPool(db=3, **redis_config))
+    @staticmethod
+    def get_client(db=0) -> redis.Redis:
+        """
+        Returns a Redis client for the specified database.
+
+        Args:
+            db (int): The database number.
+
+        Returns:
+            redis.Redis: The Redis client for the specified database.
+        """
+        # Check if the client for the specified database already exists
+        if db not in RedisManager._CLIENTS:
+            # Create a new Redis client and add it to the clients dictionary
+            redis_config = {
+                'host': CONFIG.redis_host,
+                'port': CONFIG.redis_port,
+                'password': CONFIG.redis_password,
+                'decode_responses': True,
+            }
+            RedisManager._CLIENTS[db] = redis.Redis(connection_pool=redis.ConnectionPool(db=db, **redis_config))
+
+        # Return the Redis client for the specified database
+        return RedisManager._CLIENTS[db]
 
 
 class KafkaManager(metaclass=Singleton):
+    CONSUMERS = {}
+    PRODUCERS = {}
 
-    def __init__(self):
-        self._consumers = {}
-        self._producers = {}
-
-    def get_consumer(self, topic: str) -> Consumer:
+    @staticmethod
+    def get_consumer(*topic) -> Consumer:
         """
-        为每个Topic创建单独的消费者
+        Get or create a consumer for the specified topic.
+
         Args:
-            topic: Topic名称
+            topic: The name of the topic.
 
         Returns:
-            消费者对象
+            The consumer object.
         """
-        if topic not in self._consumers:
-            self._consumers[topic] = Consumer(CONFIG.kafka_consumer_config)
-            self._consumers[topic].subscribe([topic])
-        return self._consumers[topic]
+        # Check if consumer already exists for the topic
+        if topic not in KafkaManager.CONSUMERS:
+            # Create a new consumer for the topic
+            KafkaManager.CONSUMERS[topic] = Consumer(CONFIG.kafka_consumer_config)
+            KafkaManager.CONSUMERS[topic].subscribe(list(topic))
 
-    def get_producer(self, topic):
+        # Return the consumer for the topic
+        return KafkaManager.CONSUMERS[topic]
+
+    @staticmethod
+    def get_producer(topic):
         """
-        为每个Topic创建单独的生产者
+        Get the producer object for the given topic.
+
         Args:
-            topic: Topic名称
+            topic (str): The name of the topic.
 
         Returns:
-            生产者对象
+            Producer: The producer object.
         """
-        if topic not in self._producers:
-            self._producers[topic] = Producer(CONFIG.kafka_producer_config)
-        return self._producers[topic]
+        # Check if the producer object for the given topic already exists.
+        if topic not in KafkaManager.PRODUCERS:
+            # Create a new producer object with the kafka_producer_config.
+            KafkaManager.PRODUCERS[topic] = Producer(CONFIG.kafka_producer_config)
+
+        # Return the producer object for the given topic.
+        return KafkaManager.PRODUCERS[topic]
 
     @staticmethod
     def delivery_report(err, msg):
         """
-        callback 消息向kafka写入时 获取状态
+        Callback function to get the status of a message when it is written to Kafka.
+
+        Args:
+            err (str): The error message, if any.
+            msg (str): The message that was sent to Kafka.
+
+        Returns:
+            None
+
         """
         if err is not None:
             logger.error('Message delivery failed', err)
 
-    def consume(self, topic, limit=None):
+    @staticmethod
+    def consume(topic, limit=None):
         """
-        消费数据
+        Consume data from a Kafka topic.
+
         Args:
-            topic: Topic名称
-            limit: 批量获取数量（默认获取单条数据）
+            topic (str | tuple): The name of the topic to consume data from.
+            limit (int, optional): The number of messages to consume in a batch.
+                Default is None, which means consume a single message.
 
         Returns:
-            json.loads后的数据
+            list or dict: If `limit` is specified, returns a list of JSON-decoded messages.
+                If `limit` is None, returns a single JSON-decoded message.
+
         """
-        consumer = self.get_consumer(topic)
+        consumer = KafkaManager.get_consumer(topic)
         if limit:
-            # 超时 有多少信息返回多少信息 无消息返回空列表 []
+            # Consume a batch of messages with a timeout. Return an empty list if no messages are received.
             msgs = consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout)
             return [json.loads(msg.value().decode('utf-8')) for msg in msgs]
         else:
+            # Continuously poll for messages. Return the first non-empty message received.
             while True:
                 msg = consumer.poll(1.0)
                 if msg is None or msg.error():
                     continue
                 return json.loads(msg.value().decode('utf-8'))
 
-    def produce(self, topic, data):
+    @staticmethod
+    def produce(topic, data):
         """
-        生产数据
+        Produces data to a specified topic.
+
         Args:
-            topic: Topic名称
-            data: 带发送的数据
+            topic (str): The name of the topic.
+            data (dict): The data to be sent.
 
         Returns:
             None
         """
-
-        producer = self.get_producer(topic)
-        producer.produce(topic=topic, value=json.dumps(data, cls=JSONExtensionEncoder), callback=self.delivery_report)
+        # Get the producer for the specified topic
+        producer = KafkaManager.get_producer(topic)
+        # Produce the data to the topic
+        producer.produce(
+            topic=topic,
+            value=json.dumps(data, cls=JSONExtensionEncoder),
+            callback=KafkaManager.delivery_report
+        )
+        # Poll the producer to ensure delivery
         producer.poll(0)
 
 
-class SessionManager(metaclass=Singleton):
+class DatabaseManager:
     def __init__(self):
-        self.oltp = oltp_session_factory()
+        self.oltp = OLTP_SESSION_FACTORY()
         self.olap = Client.from_url(CONFIG.olap_uri)
 
     def __enter__(self):
+        """
+        Enter method for context manager.
+
+        Returns:
+            The context manager object itself.
+        """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.oltp.close()
-        self.olap.disconnect()
+        """
+        Close the connections to the OLTP and OLAP databases when exiting the context.
+
+        Args:
+            exc_type (type): The type of the exception that occurred, if any.
+            exc_value (Exception): The exception object that was raised, if any.
+            traceback (traceback): The traceback object that contains information about the exception, if any.
+        """
+        self.oltp.close()  # Close the connection to the OLTP database
+        self.olap.disconnect()  # Disconnect from the OLAP database
 
 
 class JSONExtensionEncoder(json.JSONEncoder):
@@ -155,8 +216,11 @@ class JSONExtensionEncoder(json.JSONEncoder):
             return obj.strftime(Constants.DEFINE_DATE_FORMAT)
         if isinstance(obj, Row):
             return dict(obj._mapping)
-        if isinstance(obj, ModelTemplate):
+        if isinstance(obj, ModelBase):
             return obj.json()
         if isinstance(obj, IPv4Address):
             return str(obj)
+        if isinstance(obj, bytes):
+            # 将bytes类型转为base64编码的字符串
+            return base64.b64encode(obj).decode('utf-8')
         return json.JSONEncoder.default(self, obj)

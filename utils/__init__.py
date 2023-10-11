@@ -11,6 +11,7 @@ import sys
 from loguru import logger
 
 from .classes import CONFIG
+from .classes import DatabaseManager
 from .classes import JSONExtensionEncoder
 from .classes import KafkaManager
 from .classes import RedisManager
@@ -24,14 +25,18 @@ from .functions import generate_key
 if not os.path.exists('./logs'):
     os.mkdir('./logs')
 logger.add(
-    './logs/DEBUG.log',
+    './logs/info.log',
+    format='{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>',
     filter=lambda x: x['level'].name in ['TRACE', 'DEBUG', 'INFO'],
+    colorize=True,
     retention='1 days',
     level='TRACE',
 )
 logger.add(
-    './logs/INFO.log',
+    './logs/error.log',
+    format='{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>',
     filter=lambda x: x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
+    colorize=True,
     retention='1 days',
     level='WARNING',
 )

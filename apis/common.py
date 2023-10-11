@@ -5,10 +5,6 @@ Author      : jinming.yang
 Description : API接口会共用到的一些类、方法的定义实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
-from datetime import datetime
-from typing import Union
-
-from clickhouse_driver import Client
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
@@ -22,13 +18,10 @@ from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy import text
 from sqlalchemy import update
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
 
 from defines import *
 from utils import *
 
-oltp_session_factory = scoped_session(sessionmaker(bind=OLTPEngine))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 ALGORITHM = 'HS256'
 
@@ -47,22 +40,17 @@ async def get_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(401, '无效的认证信息')
 
 
-class SessionManager:
-    def __init__(self):
-        self.oltp = oltp_session_factory()
-        self.olap = Client.from_url(CONFIG.olap_uri)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.oltp.close()
-        self.olap.disconnect()
-
-
 def get_router(path, name, skip_auth=False):
     """
-    生成API的路由：方便统一调整
+    Generate a router for the API with the given path and name.
+
+    Args:
+        path (str): The path for the API.
+        name (str): The name for the API.
+        skip_auth (bool): Skip auth.
+
+    Returns:
+        APIRouter: The generated router.
     """
     url_prefix = f'/{path.replace(".", "/")}'
     if skip_auth:
@@ -71,161 +59,174 @@ def get_router(path, name, skip_auth=False):
         return APIRouter(prefix=url_prefix, tags=[name], dependencies=[Depends(get_user)])
 
 
-def orm_create(cls, params: dict, repeat_msg='关键字重复'):
+def orm_create(cls, params, repeat_msg='关键字重复') -> str:
     """
-    创建数据实例
+    Create a data instance.
+
     Args:
-        cls: ORM类定义
-        params: 参数
-        repeat_msg: 新增重复时的响应
+        cls: The ORM class definition.
+        params (BaseModel): The parameters.
+        repeat_msg (str): The response when there is a duplicate record.
 
     Returns:
-        新增数据的ID
+        The ID of the newly created data.
     """
+    # Dump the model into a dictionary
+    params = params.model_dump()
+    # Set the 'updated_at' field to the current datetime
     params['updated_at'] = datetime.now()
+    # Filter out the parameters that are not part of the class columns
     _params = {k: v for k, v in params.items() if k in cls.get_columns()}
+    # Execute the SQL insert statement
     result, flag = execute_sql(insert(cls).values(**_params))
+    # Check the result and return the ID if successful
     if flag:
         return result
     else:
+        # Raise an exception if there is a duplicate record
         if result.lower().find('duplicate') > 0:
             raise HTTPException(422, repeat_msg)
         else:
             raise HTTPException(422, '无效输入')
 
 
-def orm_update(cls, resource_id: str, params: dict, error_msg='无效输入'):
+def orm_update(cls, resource_id, params, error_msg='无效输入'):
     """
-    ORM数据的更新
+    Update the ORM data.
+
     Args:
-        cls: ORM类定义
-        resource_id: 资源ID
-        params: 更新数据
-        error_msg: 更新失败时的响应状态
+        cls: The ORM class definition.
+        resource_id (str): The resource ID.
+        params (BaseModel): The updated data.
+        error_msg (str): The response message when update fails.
 
     Returns:
         None
     """
-    if not params:
-        raise HTTPException(422, '缺少必填参数')
+    # Dump the model and exclude unset fields
+    params = params.model_dump(exclude_unset=True)
+    # Set the 'updated_at' field to the current datetime
     params['updated_at'] = datetime.now()
+    # Only include the parameters that are in the class columns
     _params = {k: v for k, v in params.items() if k in cls.get_columns()}
+    # Execute the SQL update query
     result, flag = execute_sql(update(cls).where(cls.id == resource_id).values(**_params))
+    # Check the result and raise appropriate exceptions
     if flag and not result:
         raise HTTPException(404, '未找到对应资源')
     elif not flag:
         raise HTTPException(422, error_msg)
 
 
-def orm_delete(cls, resource_id: Union[str, list, set]):
+def orm_delete(cls, data):
     """
-    删除数据实例
+    Delete data instance.
+
     Args:
-        cls: ORM类定义
-        resource_id:  资源ID
+        cls: ORM class definition.
+        data (List[str]): Resource ID.
 
     Returns:
         None
     """
-    session = oltp_session_factory()
-    try:
-        if isinstance(resource_id, (list, set)):
-            for instance in session.scalars(select(cls).where(cls.id.in_(resource_id))).all():
-                session.delete(instance)
-        else:
-            if instance := session.query(cls).get(resource_id):
-                session.delete(instance)  # 通过该方式可以级联删除子数据
-    except Exception as ex:
-        session.rollback()
-        logger.exception(ex)
-        raise HTTPException(400, '请求无效')
-    finally:
-        session.commit()
+    with DatabaseManager() as db:
+        try:
+            # Delete instances in batch if resource_id is a list or set
+            for instance in db.oltp.scalars(select(cls).where(cls.id.in_(data))).all():
+                db.oltp.delete(instance)
+        except Exception as ex:
+            db.oltp.rollback()
+            logger.exception(ex)
+            raise HTTPException(400, '无效资源选择')
+        finally:
+            db.oltp.commit()
 
 
-def paginate_query(sql, paginate: PaginateRequest, scalar=False, format_func=None, session=None):
+def paginate_query(sql, paginate, scalar=False, format_func=None, session=None, with_total=False):
     """
-    统一分分页查询操作
+    Paginate a query result.
+
     Args:
-        sql: 查询SQL
-        paginate: 分页参数
-        scalar: 是否需要scalars
-        format_func: 直接返回查询后的数据，不进行响应，用于数据结构需要特殊处理的情况
-        session: 特殊OLAP等情况需要方法自己提供session
+        sql (Select): The SQL query.
+        paginate (PaginateRequest): The pagination parameters.
+        scalar (bool): Whether to return scalars.
+        format_func: Function to format the query result.
+        session: The session to use for special cases.
+        with_total (bool): Whether the last column in the query result is the total count.
 
     Returns:
-        {
-            'total': int,
-            'data': List[Any]
-        }
+        A dictionary with the total count and the query result data.
     """
-
-    def _add_sort(_sql):
-        for column in paginate.sort or []:
-            if column == '':
-                continue
-            if column[0] in ('+', '-'):
-                direct = 'DESC' if column[0] == '-' else 'ASC'
-                column = column[1:]
-            else:
-                direct = 'ASC'
-            _sql = _sql.order_by(text(f'{column} {direct}'))
-        return _sql
-
-    if paginate.size == 0:
-        # 特殊约定的查询全量数据的方式，可以以其他方式，比如size是-1等
-        sql = _add_sort(sql)
-        data = execute_sql(sql, fetchall=True, scalar=scalar, session=session)
-        result = {'total': len(data), 'data': data}
-    else:
+    # Calculate the total count of rows
+    if not with_total:
         total_sql = select(func.count()).select_from(sql)
         total = execute_sql(total_sql, fetchall=False, scalar=True, session=session)
-        sql = sql.limit(paginate.size).offset(paginate.page * paginate.size)
-        result = {
-            'total': total,
-            'data': execute_sql(_add_sort(sql), fetchall=True, scalar=scalar, session=session)
-        }
+    else:
+        total = 0
+    # Apply pagination parameters to the query
+    sql = sql.limit(paginate.size).offset(paginate.page * paginate.size)
+    # Sort the query result
+    for column in paginate.sort or []:
+        if column == '':
+            continue
+        if column[0] in ('+', '-'):
+            direct = 'DESC' if column[0] == '-' else 'ASC'
+            column = column[1:]
+        else:
+            direct = 'ASC'
+        sql = sql.order_by(text(f'{column} {direct}'))
+    # Execute the query
+    result = {
+        'total': total,
+        'data': execute_sql(sql, fetchall=True, scalar=scalar, session=session)
+    }
+    # Update the total count if the last column is the total count
+    if with_total and len(result['data']) > 0:
+        result['total'] = result['data'][0][-1]
+    # Apply the format_func if provided
     if format_func:
-        # 需要按照特定格式对数据进行修改的时候使用format_func
-        result['data'] = list(map(format_func, result['data']))
+        result['data'] = list(map(format_func, result.get('data')))
     return result
 
 
-def query_condition(sql, params: dict, column: Column, field_name=None, op_func=None, op_type=None):
+def add_filter(sql, column, value, op_type):
     """
-    添加查询参数
+    Adds a query condition to the SQL object.
+
     Args:
-        sql: SQL对象
-        params: 接口参数
-        column: 查询的列
-        field_name: 条件名称(默认为空时和查询列同名)
-        op_func: 操作函数(op_func优先于op_type)
-        op_type: 操作类型(op_func和op_type至少一个不为None)
+        sql (Select): SQLAlchemy SQL statement object.
+        column (Column): The column to query.
+        value: The query parameters.
+        op_type: The operation type.
 
     Returns:
-        添加where条件后的SQL对象
+        The SQL object with the added where condition.
     """
-    if param := params.get(field_name or column.key):
-        if op_func:
-            return sql.where(op_func(param))
-        else:
-            assert op_type is not None, 'op_type 和 op_func 至少一个不为None'
-            if op_type == 'like':
-                if isinstance(param, list):
-                    return sql.where(or_(*[column.like(f'%{x}%') for x in param]))
-                else:
-                    return sql.where(column.like(f'%{param}%'))
-            elif op_type == 'in':
-                return sql.where(column.in_(param))
-            elif op_type == 'notin':
-                return sql.where(column.notin_(param))
-            elif op_type == 'datetime':
-                if start := params.get(f'{field_name or column.key}_start'):
-                    sql = sql.where(column >= start)
-                if end := params.get(f'{field_name or column.key}_end'):
-                    sql = sql.where(column <= end)
-                return sql
+    if value is not None:
+        if op_type == 'like':
+            if isinstance(value, list):
+                # Use the like operator with a list of values
+                return sql.where(or_(*[column.like(f'%{x}%') for x in value]))
             else:
-                return sql.where(eval(f'column {op_type} param'))
+                # Use the like operator with a single value
+                return sql.where(column.like(f'%{value}%'))
+        elif op_type == 'in':
+            # Use the in operator
+            return sql.where(column.in_(value))
+        elif op_type == 'notin':
+            # Use the notin operator
+            return sql.where(column.notin_(value))
+        elif op_type == 'datetime':
+            # Get the start and end values for the datetime condition
+            assert isinstance(value, DateFilterSchema), 'value must be a DateFilterSchema'
+            return sql.where(column.between(value.started_at, value.ended_at))
+        elif op_type == 'json':
+            # Translate column to text
+            return sql.where(func.text(column).like(f'%{value}%'))
+        elif op_type == 'ip':
+            return OLAPModelBase.add_ip_filter(sql, column, value)
+        else:
+            # Evaluate the operation type with the column and parameter
+            return sql.where(eval(f'column {op_type} value'))
     else:
         return sql

@@ -1,21 +1,29 @@
+from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel
 from pydantic import Field
 
 
-class SchemaBase(BaseModel):
+class BaseSchema(BaseModel):
+    """
+    ORM类的Schema基类：也就省了一个id列，同时不要单独定义下面的Config了
+    """
     id: str | None
 
     class Config:
         """
         表示可以是来自数据库的ORM实例
         """
-        orm_mode = True
+        from_attributes = True
 
 
-class IDSchema(BaseModel):
-    id: List[str]
+class DateFilterSchema(BaseModel):
+    """
+    时间过滤参数
+    """
+    started_at: datetime
+    ended_at: datetime
 
 
 class PaginateRequest(BaseModel):

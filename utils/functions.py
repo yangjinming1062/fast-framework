@@ -13,12 +13,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from config import Configuration
 from defines import *
 from utils import logger
 
 _OLAP_TABLES = {item.__tablename__ for item in OLAPModelsDict.values()}
-CONFIG = Configuration()
 OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
 
 

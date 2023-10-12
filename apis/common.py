@@ -5,9 +5,13 @@ Author      : jinming.yang
 Description : API接口会共用到的一些类、方法的定义实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
+import csv
+from io import BytesIO
+
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from jose import jwt
@@ -142,30 +146,32 @@ def orm_delete(cls, data):
             db.oltp.commit()
 
 
-def paginate_query(sql, paginate, scalar=False, format_func=None, session=None, with_total=False):
+def paginate_query(sql, paginate, format_func=None, session=None, with_total=False):
     """
     分页查询结果。
 
     Args:
         sql (Select): SQL查询。
         paginate (PaginateRequest): 分页参数。
-        scalar (bool): 执行查询时是否返回结果的第一列。
-        format_func: 用于格式化查询结果的函数。
+        format_func: 用于格式化查询结果的函数， 默认None则不进行额外操作。
         session: 无法自动判断查询数据库时需要指定的查询连接。
-        with_total (bool): 查询结果中的最后一列是否为总数。
+        with_total (bool): 查询结果中的最后一列是否为总数, 默认为False。
 
     Returns:
         包含总计数和查询结果数据的词典。
     """
-    # Calculate the total count of rows
+    # 计算总行数
     if not with_total:
         total_sql = select(func.count()).select_from(sql)
         total = execute_sql(total_sql, fetchall=False, scalar=True, session=session)
     else:
         total = 0
-    # Apply pagination parameters to the query
-    sql = sql.limit(paginate.size).offset(paginate.page * paginate.size)
-    # Sort the query result
+    # 将分页参数应用于查询
+    if paginate.size is not None:
+        sql = sql.limit(paginate.size)
+    if paginate.page is not None:
+        sql = sql.offset(paginate.page * paginate.size)
+    # 对查询结果进行排序
     for column in paginate.sort or []:
         if column == '':
             continue
@@ -175,15 +181,15 @@ def paginate_query(sql, paginate, scalar=False, format_func=None, session=None, 
         else:
             direct = 'ASC'
         sql = sql.order_by(text(f'{column} {direct}'))
-    # Execute the query
+    # 执行查询
     result = {
         'total': total,
-        'data': execute_sql(sql, fetchall=True, scalar=scalar, session=session)
+        'data': execute_sql(sql, fetchall=True, scalar=False, session=session)
     }
-    # Update the total count if the last column is the total count
+    # 如果最后一列是总计数，则更新总计数
     if with_total and len(result['data']) > 0:
         result['total'] = result['data'][0][-1]
-    # Apply the format_func if provided
+    # 应用format_func（如果提供）
     if format_func:
         result['data'] = list(map(format_func, result.get('data')))
     return result
@@ -230,3 +236,35 @@ def add_filter(sql, column, value, op_type):
             return sql.where(eval(f'column {op_type} value'))
     else:
         return sql
+
+
+def download_file(data, columns, file_name):
+    """
+    从DataFrame下载CSV文件。
+
+    Args:
+        data (List[dict | Row]): 要转换为CSV的DataFrame。
+        columns (dict): 将csv列名映射到查询列名的字典。
+        file_name (str): 文件名称。
+
+    Returns:
+        StreamingResponse: 带有CSV文件的流式响应对象。
+    """
+
+    def get_csv():
+        # 将DataFrame转换为CSV并将其存储在BytesIO对象中
+        with BytesIO() as csv_data:
+            writer = csv.writer(csv_data)
+            # 第一行先写入文件的title
+            writer.writerow(list(columns.keys()))
+            for row in data:
+                # 根据columns的顺序生成每行的数据
+                writer.writerow([row[index] for index in columns.values()])
+            yield csv_data.getvalue()
+
+    file_name = f'{file_name}_{datetime.now().strftime(Constants.DEFINE_DATE_FORMAT)}.csv'
+    headers = {
+        'Content-Type': 'text/csv;charset=utf-8',
+        'Content-Disposition': f'attachment; filename="{file_name}"',
+    }
+    return StreamingResponse(get_csv(), headers=headers)

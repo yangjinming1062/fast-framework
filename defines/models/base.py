@@ -41,18 +41,32 @@ class ModelBase(DeclarativeBase):
     @classmethod
     def get_columns(cls):
         """
-        获取类中的全部数据库列的名称
+        获取类中的全部数据库列的名称。
+
         Returns:
             列名称列表
         """
-        return [prop.key for prop in cls.__mapper__.iterate_properties if isinstance(prop, ColumnProperty)]
+        return [p.key for p in cls.__mapper__.iterate_properties if isinstance(p, ColumnProperty)]
 
     @classmethod
-    def to_property(cls, columns):
+    def get_properties(cls):
+        """
+        获取类中的全部数据库列。
+
+        Returns:
+            列名称列表
+        """
+        return [p for p in cls.__mapper__.iterate_properties if isinstance(p, ColumnProperty)]
+
+    @classmethod
+    def to_property(cls, *name):
         """
         根据列名获取对应的列
+
+        Args:
+            name (str): 列名。
         """
-        return getattr(cls, columns) if isinstance(columns, str) else [getattr(cls, name) for name in columns]
+        return getattr(cls, name[0]) if len(name) == 1 else [getattr(cls, x) for x in name]
 
     def json(self, excluded=None) -> dict:
         """
@@ -110,33 +124,28 @@ class OLAPModelBase(ModelBase):
     __abstract__ = True
 
     @classmethod
-    def add_ip_filter(cls, sql, column, ip):
+    def add_ip_filter(cls, sql, column, value):
         """
         添加IP类型列的查询条件。
 
         Args:
             sql: SQL对象。
             column (Column): 需要查询的列。
-            ip (str): 需要查询的IP。
+            value (str): 需要查询的IP。
 
         Returns:
             添加了搜索条件的SQL对象。
         """
-        if '*' in ip:
-            ip = ip.replace('*', '%')
-            sql = sql.where(func.IPv4NumToString(column).like(ip))
-        elif '/' in ip:
-            try:
-                ip_net = ip_network(ip, strict=False)
-            except Exception:
-                raise ValueError({f'IP地址格式错误': str(column)})
-            sql = sql.where(
+        if '*' in value:
+            return sql.where(func.IPv4NumToString(column).like(value.replace('*', '%')))
+        elif '/' in value:
+            ip_net = ip_network(value, strict=False)
+            return sql.where(
                 column >= ip_net.network_address,
                 column <= ip_net.broadcast_address,
             )
         else:
-            sql = sql.where(func.IPv4NumToString(column) == ip)
-        return sql
+            return sql.where(func.IPv4NumToString(column) == value)
 
 
 class TimeColumns:

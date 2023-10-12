@@ -18,12 +18,10 @@ from sqlalchemy.engine import Row
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
-from config import Configuration
 from defines import *
 from utils import logger
 from .constants import Constants
 
-CONFIG = Configuration()
 OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
 OLTP_SESSION_FACTORY = scoped_session(sessionmaker(bind=OLTP_ENGINE))
 
@@ -38,7 +36,7 @@ class Singleton(type):
 
 
 class RedisManager(metaclass=Singleton):
-    _CLIENTS = {}
+    _clients = {}
 
     @staticmethod
     def get_client(db=0) -> redis.Redis:
@@ -52,7 +50,7 @@ class RedisManager(metaclass=Singleton):
             redis.Redis: client实例。
         """
         # 每个数据库复用同一个Client，判断是否存在
-        if db not in RedisManager._CLIENTS:
+        if db not in RedisManager._clients:
             # 添加一个指定db的client实例
             redis_config = {
                 'host': CONFIG.redis_host,
@@ -60,15 +58,15 @@ class RedisManager(metaclass=Singleton):
                 'password': CONFIG.redis_password,
                 'decode_responses': True,
             }
-            RedisManager._CLIENTS[db] = redis.Redis(connection_pool=redis.ConnectionPool(db=db, **redis_config))
+            RedisManager._clients[db] = redis.Redis(connection_pool=redis.ConnectionPool(db=db, **redis_config))
 
         # 返回指定db的client实例
-        return RedisManager._CLIENTS[db]
+        return RedisManager._clients[db]
 
 
 class KafkaManager(metaclass=Singleton):
-    CONSUMERS = {}
-    PRODUCERS = {}
+    _consumers = {}
+    _producers = {}
 
     @staticmethod
     def get_consumer(*topic) -> Consumer:
@@ -82,13 +80,13 @@ class KafkaManager(metaclass=Singleton):
             Consumer: 消费者实例。
         """
         # 检查指定主题是否已经存在（这里topic其实是一个tuple）
-        if topic not in KafkaManager.CONSUMERS:
+        if topic not in KafkaManager._consumers:
             # 不存在则新建一个消费者
-            KafkaManager.CONSUMERS[topic] = Consumer(CONFIG.kafka_consumer_config)
-            KafkaManager.CONSUMERS[topic].subscribe(list(topic))
+            KafkaManager._consumers[topic] = Consumer(CONFIG.kafka_consumer_config)
+            KafkaManager._consumers[topic].subscribe(list(topic))
 
         # 返回消费者实例
-        return KafkaManager.CONSUMERS[topic]
+        return KafkaManager._consumers[topic]
 
     @staticmethod
     def get_producer(topic):
@@ -102,12 +100,12 @@ class KafkaManager(metaclass=Singleton):
             Producer: 生产者实例。
         """
         # 检查给定主题的生产者对象是否已经存在
-        if topic not in KafkaManager.PRODUCERS:
+        if topic not in KafkaManager._producers:
             # 创建一个新的生产者对象
-            KafkaManager.PRODUCERS[topic] = Producer(CONFIG.kafka_producer_config)
+            KafkaManager._producers[topic] = Producer(CONFIG.kafka_producer_config)
 
         # 返回给定主题的生产者对象
-        return KafkaManager.PRODUCERS[topic]
+        return KafkaManager._producers[topic]
 
     @staticmethod
     def delivery_report(err, msg):

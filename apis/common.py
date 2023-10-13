@@ -6,7 +6,7 @@ Description : API接口会共用到的一些类、方法的定义实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
 import csv
-from io import BytesIO
+from io import StringIO
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -146,13 +146,14 @@ def orm_delete(cls, data):
             db.oltp.commit()
 
 
-def paginate_query(sql, paginate, format_func=None, session=None, with_total=False):
+def paginate_query(sql, paginate, schema, format_func=None, session=None, with_total=False):
     """
     分页查询结果。
 
     Args:
         sql (Select): SQL查询。
         paginate (PaginateRequest): 分页参数。
+        schema (Type[PaginateResponse]): 接口响应数据定义。
         format_func: 用于格式化查询结果的函数， 默认None则不进行额外操作。
         session: 无法自动判断查询数据库时需要指定的查询连接。
         with_total (bool): 查询结果中的最后一列是否为总数, 默认为False。
@@ -162,37 +163,44 @@ def paginate_query(sql, paginate, format_func=None, session=None, with_total=Fal
     """
     # 计算总行数
     if not with_total:
+        # 如果查询的列中不包含总数则先查总数再附加分页及排序条件
         total_sql = select(func.count()).select_from(sql)
         total = execute_sql(total_sql, fetchall=False, scalar=True, session=session)
     else:
+        # 最后一列是总数时跳过查询总数
         total = 0
     # 将分页参数应用于查询
     if paginate.size is not None:
         sql = sql.limit(paginate.size)
     if paginate.page is not None:
         sql = sql.offset(paginate.page * paginate.size)
+    # 导出数据时可以提供待导出数据的ID进行过滤
+    if paginate.export and paginate.data:
+        sql = add_filter(sql, Column('id'), paginate.data, 'in')
     # 对查询结果进行排序
-    for column in paginate.sort or []:
-        if column == '':
+    for column_name in paginate.sort or []:
+        if column_name == '':
             continue
-        if column[0] in ('+', '-'):
-            direct = 'DESC' if column[0] == '-' else 'ASC'
-            column = column[1:]
+        if column_name[0] in ('+', '-'):
+            direct = 'DESC' if column_name[0] == '-' else 'ASC'
+            column_name = column_name[1:]
         else:
             direct = 'ASC'
-        sql = sql.order_by(text(f'{column} {direct}'))
+        sql = sql.order_by(text(f'{column_name} {direct}'))
     # 执行查询
-    result = {
-        'total': total,
-        'data': execute_sql(sql, fetchall=True, scalar=False, session=session)
-    }
-    # 如果最后一列是总计数，则更新总计数
-    if with_total and len(result['data']) > 0:
-        result['total'] = result['data'][0][-1]
+    data = execute_sql(sql, fetchall=True, scalar=False, session=session)
     # 应用format_func（如果提供）
     if format_func:
-        result['data'] = list(map(format_func, result.get('data')))
-    return result
+        data = list(map(format_func, data))
+    # 如果最后一列是总计数，则更新总计数
+    if with_total and data:
+        total = data[0][-1]
+    result = schema(total=total, data=data)
+    # 统一进行数据导出的处理
+    if paginate.export:
+        return download_file(result.data, schema.__doc__.strip())
+    else:
+        return result
 
 
 def add_filter(sql, column, value, op_type):
@@ -211,40 +219,40 @@ def add_filter(sql, column, value, op_type):
     if value is not None:
         if op_type == 'like':
             if isinstance(value, list):
-                # Use the like operator with a list of values
+                # like也可以用于列表：以或的关系
                 return sql.where(or_(*[column.like(f'%{x}%') for x in value]))
             else:
-                # Use the like operator with a single value
+                # 使用like运算符
                 return sql.where(column.like(f'%{value}%'))
         elif op_type == 'in':
-            # Use the in operator
+            # in运算符
             return sql.where(column.in_(value))
         elif op_type == 'notin':
-            # Use the notin operator
+            # notin运算符
             return sql.where(column.notin_(value))
         elif op_type == 'datetime':
-            # Get the start and end values for the datetime condition
+            # 添加时间过滤参数：这个地方可以根据情况调整
             assert isinstance(value, DateFilterSchema), 'value must be a DateFilterSchema'
             return sql.where(column.between(value.started_at, value.ended_at))
         elif op_type == 'json':
-            # Translate column to text
+            # 列类型是json时添加检索条件，这里直接将json变成text属于一种偷懒做法，具体取决用的数据库类型
             return sql.where(func.text(column).like(f'%{value}%'))
         elif op_type == 'ip':
+            # Clickhouse添加IP列的过滤条件
             return OLAPModelBase.add_ip_filter(sql, column, value)
         else:
-            # Evaluate the operation type with the column and parameter
+            # 其他类似于==,>,<等这种运算符直接添加
             return sql.where(eval(f'column {op_type} value'))
     else:
         return sql
 
 
-def download_file(data, columns, file_name):
+def download_file(data, file_name):
     """
     从DataFrame下载CSV文件。
 
     Args:
-        data (List[dict | Row]): 要转换为CSV的DataFrame。
-        columns (dict): 将csv列名映射到查询列名的字典。
+        data (List[BaseSchema]): 要转换为CSV的DataFrame。
         file_name (str): 文件名称。
 
     Returns:
@@ -253,14 +261,17 @@ def download_file(data, columns, file_name):
 
     def get_csv():
         # 将DataFrame转换为CSV并将其存储在BytesIO对象中
-        with BytesIO() as csv_data:
+        with StringIO() as csv_data:
             writer = csv.writer(csv_data)
             # 第一行先写入文件的title
-            writer.writerow(list(columns.keys()))
+            writer.writerow([v.title or k for k, v in data[0].model_fields.items()])
             for row in data:
-                # 根据columns的顺序生成每行的数据
-                writer.writerow([row[index] for index in columns.values()])
+                # 之后再把数据序列化成dict然后取出value
+                writer.writerow([x for x in row.model_dump().values()])
             yield csv_data.getvalue()
+
+    if not data:
+        raise HTTPException(404, '所选范围无数据，下载失败')
 
     file_name = f'{file_name}_{datetime.now().strftime(Constants.DEFINE_DATE_FORMAT)}.csv'
     headers = {

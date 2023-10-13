@@ -10,7 +10,6 @@ import sys
 
 from loguru import logger
 
-from .classes import CONFIG
 from .classes import DatabaseManager
 from .classes import JSONExtensionEncoder
 from .classes import KafkaManager

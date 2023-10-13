@@ -3,19 +3,19 @@ from ..enums import *
 
 
 class UserBaseSchema(BaseSchema):
-    account: str
-    username: str
-    role: RoleEnum
-    valid: bool
-    phone: str
-    email: str
+    account: str = Field(title='账号')
+    username: str = Field(title='用户名')
+    role: RoleEnum = Field(title='角色')
+    valid: bool = Field(title='是否有效')
+    phone: str = Field(title='手机号')
+    email: str = Field(title='邮箱')
 
 
 class LoginResponse(BaseModel):
-    username: str
-    role: RoleEnum
-    token_type: str
-    access_token: str
+    username: str = Field(title='用户名')
+    role: RoleEnum = Field(title='角色')
+    token_type: str = Field(title='token类型')
+    access_token: str = Field(title='访问令牌')
 
 
 class UserCreateRequest(BaseModel):
@@ -34,11 +34,14 @@ class UserUpdateRequest(BaseModel):
 
 
 class UsersRequest(PaginateRequest):
-    class UsersRequestQuery:
+    class Query:
         keyword: str = Field(title='用户名/账户')
 
-    query: UsersRequestQuery | None
+    query: Query | None
 
 
 class UsersResponse(PaginateResponse):
+    """
+    用户列表
+    """
     data: List[UserBaseSchema]

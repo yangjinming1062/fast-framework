@@ -23,7 +23,7 @@ def get_users(params: UsersRequest) -> UsersResponse:
     if query := params.query:
         if keyword := query.keyword:
             sql = sql.where(User.account.like(f'%{keyword}%') | User.username.like(f'%{keyword}%'))
-    return paginate_query(sql, params, False)
+    return paginate_query(sql, params, UsersResponse)
 
 
 @router.post('/users', status_code=201, summary='新建用户')

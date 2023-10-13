@@ -4,8 +4,8 @@ from alembic import context
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
+from defines import CONFIG
 from defines import OLTPModelBase
-from utils import CONFIG
 
 config = context.config
 

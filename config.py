@@ -12,35 +12,43 @@ from pydantic_settings import SettingsConfigDict
 
 class Configuration(BaseSettings):
     model_config = SettingsConfigDict(env_file=('.env', 'dev.env'), env_file_encoding='utf-8', extra='ignore')
+    # 日志记录
+    log_dir: str = ''
+    log_level: str = 'DEBUG'
+    log_info_name: str = 'info.log'
+    log_error_name: str = 'error.log'
+    log_stdout: bool = True
+    log_format: str = '{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>'
+    log_retention: str = '1 days'
     # 默认IP
-    host: str = Field('127.0.0.1', env='HOST')
+    host: str = '127.0.0.1'
     # OLTP数据库相关参数
     oltp_host: str = host
-    oltp_port: int = Field(5432)
+    oltp_port: int = 5432
     oltp_user: str = Field(alias='POSTGRESQL_USERNAME')
     oltp_pwd: str = Field(alias='POSTGRESQL_PASSWORD')
     oltp_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
     olap_host: str = host
-    olap_port: int = Field(9000)
+    olap_port: int = 9000
     olap_user: str = Field(alias='CLICKHOUSE_ADMIN_USER')
     olap_pwd: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
     olap_db: str = Field(alias='CLICKHOUSE_DATABASE')
     # REDIS相关参数
     redis_host: str = host
-    redis_port: int = Field(6379)
+    redis_port: int = 6379
     redis_password: str
     # KAFKA相关参数
     kafka_host: str = host
-    kafka_port: int = Field(9092)
-    kafka_consumer_timeout: int = Field(10)
+    kafka_port: int = 9092
+    kafka_consumer_timeout: int = 10
     kafka_protocol: str = 'PLAINTEXT'
     kafka_message_max_bytes: int
-    kafka_producer_queue_size: int = Field(100)
-    kafka_group: str = Field('demo')
+    kafka_producer_queue_size: int = 100
+    kafka_group: str = 'demo'
     # JWT
-    jwt_token_expire_days = 7
-    jwt_secret = Field('DEMO_KEY')
+    jwt_token_expire_days: int = 7
+    jwt_secret: str = 'DEMO_KEY'
 
     # 拓展属性
 

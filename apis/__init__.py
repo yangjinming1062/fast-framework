@@ -5,8 +5,8 @@ from .common import *
 for name in glob(os.path.dirname(__file__) + '/*/*.??'):
     if os.path.isfile(name) and not name.endswith('__.py'):
         tmp = name.split(os.sep)[-3:]
-        module = '.'.join(tmp)[:-2]
-        name = '_'.join(tmp)[:-2]
+        module = '.'.join(tmp)[:-3]  # [:-3]是去掉文件的后缀名
+        name = '_'.join(tmp)[:-3]
         expression = f'from {module} import router as {name}_router'
         exec(expression)
 

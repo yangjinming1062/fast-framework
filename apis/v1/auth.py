@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import Body
 
 from ..common import *
 
@@ -14,9 +14,9 @@ def _create_token(identity):
 
 
 @router.post('/login')
-async def login(form_data: OAuth2PasswordRequestForm = Depends()) -> LoginResponse:
-    if user := execute_sql(select(User).where(User.account == form_data.username), fetchall=False):
-        if user.check_password(form_data.password):
+async def login(data: LoginRequest = Body()) -> LoginResponse:
+    if user := execute_sql(select(User).where(User.account == data.account), fetchall=False):
+        if user.check_password(data.password):
             return LoginResponse(**{
                 'username': user.username,
                 'role': user.role,

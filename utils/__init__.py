@@ -10,6 +10,7 @@ import sys
 
 from loguru import logger
 
+from config import Configuration
 from .classes import DatabaseManager
 from .classes import JSONExtensionEncoder
 from .classes import KafkaManager
@@ -20,23 +21,25 @@ from .functions import exceptions
 from .functions import execute_sql
 from .functions import generate_key
 
-# 日志记录
-if not os.path.exists('./logs'):
-    os.mkdir('./logs')
-logger.add(
-    './logs/info.log',
-    format='{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>',
-    filter=lambda x: x['level'].name in ['TRACE', 'DEBUG', 'INFO'],
-    colorize=True,
-    retention='1 days',
-    level='TRACE',
-)
-logger.add(
-    './logs/error.log',
-    format='{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>',
-    filter=lambda x: x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
-    colorize=True,
-    retention='1 days',
-    level='WARNING',
-)
-logger.add(sys.stdout, colorize=True, format='{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>')
+CONFIG = Configuration()
+
+if CONFIG.log_dir:
+    # 日志记录
+    if not os.path.exists(CONFIG.log_dir):
+        os.mkdir(CONFIG.log_dir)
+    logger.add(
+        os.path.join(CONFIG.log_dir, CONFIG.log_info_name),
+        format=CONFIG.log_format,
+        filter=lambda x: x['level'].name in ['DEBUG', 'INFO'],
+        retention=CONFIG.log_retention,
+        level=CONFIG.log_level,
+    )
+    logger.add(
+        os.path.join(CONFIG.log_dir, CONFIG.log_error_name),
+        format=CONFIG.log_format,
+        filter=lambda x: x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
+        retention=CONFIG.log_retention,
+        level='WARNING',
+    )
+if CONFIG.log_stdout:
+    logger.add(sys.stdout, colorize=True, format=CONFIG.log_format)

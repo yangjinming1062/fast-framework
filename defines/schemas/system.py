@@ -11,6 +11,11 @@ class UserBaseSchema(BaseSchema):
     email: str = Field(title='邮箱')
 
 
+class LoginRequest(BaseModel):
+    account: str = Field(title='账号')
+    password: str = Field(title='密码')
+
+
 class LoginResponse(BaseModel):
     username: str = Field(title='用户名')
     role: RoleEnum = Field(title='角色')
@@ -34,7 +39,7 @@ class UserUpdateRequest(BaseModel):
 
 
 class UsersRequest(PaginateRequest):
-    class Query:
+    class Query(BaseModel):
         keyword: str = Field(title='用户名/账户')
 
     query: Query | None

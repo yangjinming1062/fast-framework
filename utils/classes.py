@@ -66,10 +66,12 @@ class RedisManager(metaclass=Singleton):
 
 class KafkaManager(metaclass=Singleton):
     _consumers = {}
-    _producers = {}
+
+    def __init__(self):
+        self.producer = Producer(CONFIG.kafka_producer_config)
 
     @staticmethod
-    def get_consumer(*topic) -> Consumer:
+    def _get_consumer(*topic) -> Consumer:
         """
         创建一个消费者。
 
@@ -89,25 +91,6 @@ class KafkaManager(metaclass=Singleton):
         return KafkaManager._consumers[topic]
 
     @staticmethod
-    def get_producer(topic):
-        """
-        创建一个生产者。
-
-        Args:
-            topic (str): 主题的名称。
-
-        Returns:
-            Producer: 生产者实例。
-        """
-        # 检查给定主题的生产者对象是否已经存在
-        if topic not in KafkaManager._producers:
-            # 创建一个新的生产者对象
-            KafkaManager._producers[topic] = Producer(CONFIG.kafka_producer_config)
-
-        # 返回给定主题的生产者对象
-        return KafkaManager._producers[topic]
-
-    @staticmethod
     def delivery_report(err, msg):
         """
         回调函数，用于获取消息写入Kafka时的状态。
@@ -119,56 +102,86 @@ class KafkaManager(metaclass=Singleton):
         Returns:
             None
         """
+        logger.debug(f'Kafka Sent:{msg}')
         if err is not None:
             logger.error('Kafka发生失败', err)
 
     @staticmethod
-    def consume(*topic, limit=None):
+    def consume(*topic, limit=None, consumer=None, need_load=True):
         """
         消费指定主题的数据。
 
         Args:
             topic: 需要消费的主题。
             limit (int, optional): 批处理中要使用的消息数。默认值为None，表示使用单个消息。
+            consumer (Consumer, optional): 默认为None可以使用config中的配置自动创建一个消费者，也可以指定特定的消费者来消费。
+            need_load (bool, optional): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
 
         Returns:
-            list or dict: 如果指定了“limit”，则返回JSON解码消息的列表。如果“limit”为None，则返回单个JSON解码消息。
+            list: 如果指定了“limit”，则返回JSON解码消息的列表。
+
+        Yields:
+            dict | str: 如果“limit”为None，则以生成器的方式每次返回单个JSON解码消息。
+
+        Raises:
+            ValueError: 当kafka发生错误时抛出异常。
         """
-        consumer = KafkaManager.get_consumer(topic)
+        def load(msg):
+            return json.loads(msg.value().decode('utf-8'))
+
+        consumer = consumer or KafkaManager._get_consumer(topic)
         if limit:
             # 批量消费
             msgs = consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout)
-            return [json.loads(msg.value().decode('utf-8')) for msg in msgs]
+            return [load(msg) for msg in msgs] if need_load else [msg.value() for msg in msgs]
         else:
             # 持续轮询，返回收到的第一条非空消息
             while True:
                 msg = consumer.poll(1.0)
-                if msg is None or msg.error():
+                if msg is None:
                     continue
-                return json.loads(msg.value().decode('utf-8'))
+                if msg.error():
+                    raise ValueError(msg.error())
+                yield load(msg) if need_load else msg.value()
 
-    @staticmethod
-    def produce(topic, data):
+    def _produce_data(self, topic, value):
+        """
+        单次发送指定主题的数据。
+
+        Args:
+            topic (str): 主题的名称。
+            value (dict | str): 要发送的数据。
+
+        Returns:
+            None
+        """
+        if isinstance(value, dict):
+            value = json.dumps(value, cls=JSONExtensionEncoder)
+        self.producer.produce(topic=topic, value=value, callback=KafkaManager.delivery_report)
+
+    def produce(self, topic, data):
         """
         生成指定主题的数据。
 
         Args:
             topic (str): 主题的名称。
-            data (dict): 要发送的数据。
+            data (dict | list | str): 要发送的数据, 建议批量发送以提高效率。
 
         Returns:
             None
         """
-        # 获取指定主题的生产者
-        producer = KafkaManager.get_producer(topic)
-        # 生成主题的数据
-        producer.produce(
-            topic=topic,
-            value=json.dumps(data, cls=JSONExtensionEncoder),
-            callback=KafkaManager.delivery_report
-        )
+        if isinstance(data, list):
+            index = 1
+            for item in data:
+                if index >= CONFIG.kafka_producer_queue_size:
+                    self.producer.poll(0)
+                    index = 1
+                self._produce_data(topic, item)
+                index += 1
+        else:
+            self._produce_data(topic, data)
         # 确保交付
-        producer.poll(0)
+        self.producer.poll(0)
 
 
 class DatabaseManager:

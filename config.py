@@ -23,28 +23,25 @@ class Configuration(BaseSettings):
     # 默认IP
     host: str = '127.0.0.1'
     # OLTP数据库相关参数
-    oltp_host: str = host
-    oltp_port: int = 5432
-    oltp_user: str = Field(alias='POSTGRESQL_USERNAME')
-    oltp_pwd: str = Field(alias='POSTGRESQL_PASSWORD')
+    oltp_address: str = f'{host}:5432'
+    oltp_username: str = Field(alias='POSTGRESQL_USERNAME')
+    oltp_password: str = Field(alias='POSTGRESQL_PASSWORD')
     oltp_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
-    olap_host: str = host
-    olap_port: int = 9000
-    olap_user: str = Field(alias='CLICKHOUSE_ADMIN_USER')
-    olap_pwd: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
+    olap_address: str = f'{host}:9000'
+    olap_username: str = Field(alias='CLICKHOUSE_ADMIN_USER')
+    olap_password: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
     olap_db: str = Field(alias='CLICKHOUSE_DATABASE')
     # REDIS相关参数
     redis_host: str = host
     redis_port: int = 6379
     redis_password: str
     # KAFKA相关参数
-    kafka_host: str = host
-    kafka_port: int = 9092
+    kafka_address: str = f'{host}:9092'
     kafka_consumer_timeout: int = 10
     kafka_protocol: str = 'PLAINTEXT'
     kafka_message_max_bytes: int
-    kafka_producer_queue_size: int = 100
+    kafka_producer_queue_size: int = 1000
     kafka_group: str = 'demo'
     # JWT
     jwt_token_expire_days: int = 7
@@ -54,20 +51,16 @@ class Configuration(BaseSettings):
 
     @property
     def oltp_uri(self):
-        return f'postgresql+psycopg://{self.oltp_user}:{self.oltp_pwd}@{self.oltp_host}:{self.oltp_port}/{self.oltp_db}'
+        return f'postgresql+psycopg://{self.oltp_username}:{self.oltp_password}@{self.oltp_address}/{self.oltp_db}'
 
     @property
     def olap_uri(self):
-        return f'clickhouse://{self.olap_user}:{self.olap_pwd}@{self.olap_host}:{self.olap_port}/{self.olap_db}'
-
-    @property
-    def kafka_server(self):
-        return f'{self.kafka_host}:{self.kafka_port}'
+        return f'clickhouse://{self.olap_username}:{self.olap_password}@{self.olap_address}/{self.olap_db}'
 
     @property
     def kafka_producer_config(self):
         return {
-            'bootstrap.servers': self.kafka_server,
+            'bootstrap.servers': self.kafka_address,
             'security.protocol': self.kafka_protocol,
             'message.max.bytes': self.kafka_message_max_bytes,
             'queue.buffering.max.messages': self.kafka_producer_queue_size,
@@ -78,5 +71,5 @@ class Configuration(BaseSettings):
         return {
             'auto.offset.reset': 'earliest',
             'group.id': self.kafka_group,
-            'bootstrap.servers': self.kafka_server,
+            'bootstrap.servers': self.kafka_address,
         }

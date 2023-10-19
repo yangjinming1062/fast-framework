@@ -10,6 +10,7 @@ from datetime import datetime
 from ipaddress import ip_network
 from typing import Optional
 
+from cryptography.fernet import Fernet
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import JSON
@@ -25,6 +26,7 @@ from typing_extensions import Annotated
 from config import Configuration
 
 CONFIG = Configuration()
+SECRET = Fernet(CONFIG.secret_key)
 
 str_id = Annotated[str, mapped_column(String(16))]
 str_small = Annotated[str, mapped_column(String(32))]
@@ -106,6 +108,34 @@ class ModelBase(DeclarativeBase):
                 result[prop.key] = value
 
         return result
+
+    @staticmethod
+    def encrypt(data):
+        """
+        加密给定的数据并返回加密的结果。
+
+        Parameters:
+            data (str | bytes): 需要加密的数据。
+
+        Returns:
+            str: 加密的结果。
+        """
+        if isinstance(data, str):
+            data = data.encode()
+        return SECRET.encrypt(data).decode('utf-8')
+
+    @staticmethod
+    def decrypt(data):
+        """
+        解密给定数据并返回解码后的字符串。
+
+        Args:
+            data (bytes): 要解密的加密数据。
+
+        Returns:
+            str: 解码后的字符串。
+        """
+        return SECRET.decrypt(data).decode('utf-8')
 
 
 class OLTPModelBase(ModelBase):

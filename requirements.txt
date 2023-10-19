@@ -7,6 +7,8 @@ pydantic-settings==2.0.3
 python-dotenv==1.0.0
 ## jwt
 python-jose==3.3.0
+# Secret
+cryptography==41.0.4
 # DB
 alembic==1.12.0
 SQLAlchemy==2.0.20

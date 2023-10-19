@@ -28,7 +28,7 @@ def get_users(params: UsersRequest) -> UsersResponse:
 
 @router.post('/users', status_code=201, summary='新建用户')
 def post_user(params: UserCreateRequest):
-    params.password = User.generate_hash(params.password)
+    params.password = generate_key(params.password)
     return orm_create(User, params)
 
 

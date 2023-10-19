@@ -47,7 +47,7 @@ class Configuration(BaseSettings):
     jwt_token_expire_days: int = 7
     jwt_secret: str = 'DEMO_KEY'
     # Secret
-    secret_key = '用于加解密数据的Key'
+    secret_key: bytes = b'_6TMXZCARlHQyko-3pQJLKNF_niJwDxtVzHn0BdHmlM='
 
     # 拓展属性
 

@@ -38,9 +38,10 @@ def patch_user(user_id, params: UserUpdateRequest):
 
 
 @router.delete('/users', status_code=204, summary='删除用户')
-def delete_user(params: List[str] = Query(), db: DatabaseManager = Depends()):
-    for uid in params:
-        user = db.oltp.get(User, uid)
-        if user.role != RoleEnum.Admin:
-            user.valid = False
-            db.oltp.commit()
+def delete_user(params: list[str] = Query()):
+    with DatabaseManager() as db:
+        for uid in params:
+            user = db.get(User, uid)
+            if user.role != RoleEnum.Admin:
+                user.valid = False
+                db.commit()

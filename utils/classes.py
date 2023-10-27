@@ -15,6 +15,7 @@ from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Row
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
@@ -126,6 +127,7 @@ class KafkaManager(metaclass=Singleton):
         Raises:
             ValueError: 当kafka发生错误时抛出异常。
         """
+
         def load(msg):
             return json.loads(msg.value().decode('utf-8'))
 
@@ -185,9 +187,17 @@ class KafkaManager(metaclass=Singleton):
 
 
 class DatabaseManager:
-    def __init__(self):
-        self.oltp = OLTP_SESSION_FACTORY()
-        self.olap = Client.from_url(CONFIG.olap_uri)
+    session: Session | Client
+
+    def __init__(self, session_type='oltp'):
+        if session_type == 'oltp':
+            self.type = 'oltp'
+            self.session = OLTP_SESSION_FACTORY()
+        elif session_type == 'olap':
+            self.type = 'olap'
+            self.session = Client.from_url(CONFIG.olap_uri)
+        else:
+            raise ValueError('session_type must be "oltp" or "olap"')
 
     def __enter__(self):
         """
@@ -196,7 +206,7 @@ class DatabaseManager:
         Returns:
             数据管理器
         """
-        return self
+        return self.session
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
@@ -207,8 +217,13 @@ class DatabaseManager:
             exc_value (Exception): The exception object that was raised, if any.
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
-        self.oltp.close()
-        self.olap.disconnect()
+        self.close()
+
+    def close(self):
+        if self.type == 'oltp':
+            self.session.close()
+        elif self.type == 'olap':
+            self.session.disconnect()
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

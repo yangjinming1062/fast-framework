@@ -49,4 +49,4 @@ class UsersResponse(PaginateResponse):
     """
     用户列表
     """
-    data: List[UserBaseSchema]
+    data: list[UserBaseSchema]

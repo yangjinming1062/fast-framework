@@ -8,7 +8,6 @@ Description : model基础信息定义
 import uuid
 from datetime import datetime
 from ipaddress import ip_network
-from typing import Optional
 
 from cryptography.fernet import Fernet
 from sqlalchemy import Column
@@ -28,7 +27,7 @@ from config import Configuration
 CONFIG = Configuration()
 SECRET = Fernet(CONFIG.secret_key)
 
-str_id = Annotated[str, mapped_column(String(16))]
+str_id = Annotated[str, mapped_column(String(16), index=True)]
 str_small = Annotated[str, mapped_column(String(32))]
 str_medium = Annotated[str, mapped_column(String(64))]
 str_large = Annotated[str, mapped_column(String(128))]
@@ -185,4 +184,4 @@ class TimeColumns:
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(default=func.now())
-    updated_at: Mapped[Optional[datetime]] = mapped_column(onupdate=func.now(), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(onupdate=func.now(), nullable=True)

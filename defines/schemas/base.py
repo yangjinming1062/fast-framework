@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from pydantic import BaseModel
 from pydantic import Field
@@ -32,9 +31,9 @@ class PaginateRequest(BaseModel):
     """
     page: int | None = Field(None, ge=0)
     size: int | None = Field(None, gt=0, lt=100)
-    sort: List[str] | None = None
+    sort: list[str] | None = None
     export: bool = Field(False, title='是否导出数据')
-    data: List[str] | None = Field(None, title='按ID导出时的ID列表')
+    data: list[str] | None = Field(None, title='按ID导出时的ID列表')
 
 
 class PaginateResponse(BaseModel):

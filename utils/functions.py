@@ -47,11 +47,12 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                 session_type = 'oltp'
     else:
         session_type = ''
-    with DatabaseManager(session=session, session_type=session_type) as db:
+    db = DatabaseManager(session=session, session_type=session_type)
+    try:
         if sql.is_select:
             if db.type == 'olap':
                 sql = sql.compile(compile_kwargs={'literal_binds': True}).string
-            executed = db.execute(sql)
+            executed = db.session.execute(sql)
             if fetchall:
                 result = executed.fetchall() if db.type == 'oltp' else executed
                 if scalar:
@@ -68,12 +69,12 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                     result = result[0]
             # 使查询结果脱离当前session，不然离开当前方法后无法访问里面的数据
             if not db.inherit and db.type == 'oltp':
-                db.expunge_all()
+                db.session.expunge_all()
             return result
         elif sql.is_insert:
             if db.type == 'oltp':
-                result = db.execute(sql, params) if params else db.execute(sql)
-                db.flush()
+                result = db.session.execute(sql, params) if params else db.session.execute(sql)
+                db.session.flush()
                 if hasattr(result, 'inserted_primary_key_rows'):
                     created_id = [key[0] for key in result.inserted_primary_key_rows]
                     return created_id if params else created_id[0], True
@@ -84,18 +85,25 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                 sql = sql.compile(compile_kwargs={'literal_binds': True}).string
                 if params:
                     sql = sql.split('VALUES')[0] + 'VALUES'
-                    db.execute(sql, params=params)
+                    db.session.execute(sql, params=params)
                 else:
-                    db.execute(sql)
+                    db.session.execute(sql)
                 return '', True
         else:
-            result = db.execute(sql)
+            result = db.session.execute(sql)
             if db.type == 'oltp':
-                db.flush()
+                db.session.flush()
             if result:
                 return result.rowcount, True
             else:
                 return 'SQL执行失败', False
+    except Exception as ex:
+        logger.error(f'{sql}执行失败：{ex}')
+        if db.type == 'oltp':
+            db.session.rollback()
+        return str(ex), False
+    finally:
+        db.close()
 
 
 def exceptions(default=None):

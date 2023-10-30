@@ -16,15 +16,12 @@ from confluent_kafka import Producer
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
 
 from defines import *
 from utils import logger
 from .constants import Constants
 
 OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
-OLTP_SESSION_FACTORY = scoped_session(sessionmaker(bind=OLTP_ENGINE))
 
 
 class Singleton(type):
@@ -187,17 +184,29 @@ class KafkaManager(metaclass=Singleton):
 
 
 class DatabaseManager:
+
+    __slots__ = ('session', 'type', 'autocommit', 'inherit', 'rollback')
     session: Session | Client
 
-    def __init__(self, session_type='oltp'):
-        if session_type == 'oltp':
-            self.type = 'oltp'
-            self.session = OLTP_SESSION_FACTORY()
-        elif session_type == 'olap':
-            self.type = 'olap'
-            self.session = Client.from_url(CONFIG.olap_uri)
+    def __init__(self, session=None, session_type='oltp', autocommit=True):
+        if session is None:
+            self.inherit = False
+            self.autocommit = autocommit
+            if session_type == 'oltp':
+                self.type = 'oltp'
+                self.session = Session(OLTP_ENGINE)
+            elif session_type == 'olap':
+                self.type = 'olap'
+                self.session = Client.from_url(CONFIG.olap_uri)
         else:
-            raise ValueError('session_type must be "oltp" or "olap"')
+            self.inherit = True
+            self.autocommit = False
+            self.session = session
+            if isinstance(session, Client):
+                self.type = 'olap'
+            else:
+                self.type = 'oltp'
+        self.rollback = self.type == 'oltp'
 
     def __enter__(self):
         """
@@ -217,10 +226,15 @@ class DatabaseManager:
             exc_value (Exception): The exception object that was raised, if any.
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
+        if exc_value:
+            if self.rollback:
+                self.session.rollback()
         self.close()
 
     def close(self):
         if self.type == 'oltp':
+            if self.autocommit:
+                self.session.commit()
             self.session.close()
         elif self.type == 'olap':
             self.session.disconnect()

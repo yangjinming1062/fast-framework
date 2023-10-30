@@ -133,17 +133,14 @@ def orm_delete(cls, data):
     Returns:
         None
     """
-    with DatabaseManager() as db:
-        try:
+    try:
+        with DatabaseManager() as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)
-        except Exception as ex:
-            db.rollback()
-            logger.exception(ex)
-            raise HTTPException(400, '无效资源选择')
-        finally:
-            db.commit()
+    except Exception as ex:
+        logger.exception(ex)
+        raise HTTPException(400, '无效资源选择')
 
 
 def paginate_query(sql, paginate, schema, format_func=None, session=None, with_total=False):

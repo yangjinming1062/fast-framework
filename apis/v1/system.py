@@ -44,4 +44,3 @@ def delete_user(params: list[str] = Query()):
             user = db.get(User, uid)
             if user.role != RoleEnum.Admin:
                 user.valid = False
-                db.commit()

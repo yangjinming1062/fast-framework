@@ -146,7 +146,7 @@ class OLTPModelBase(DeclarativeBase, ModelBase):
     id: Mapped[str_id] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-12:])
 
 
-class OLAPModelBase(ModelBase):
+class OLAPModelBase(DeclarativeBase, ModelBase):
     """
     OLAP模型基类
     """

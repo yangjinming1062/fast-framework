@@ -34,7 +34,7 @@ str_large = Annotated[str, mapped_column(String(128))]
 str_huge = Annotated[str, mapped_column(String(256))]
 
 
-class ModelBase(DeclarativeBase):
+class ModelBase:
     """
     提供公共方法的基类
     """
@@ -137,7 +137,7 @@ class ModelBase(DeclarativeBase):
         return SECRET.decrypt(data).decode('utf-8')
 
 
-class OLTPModelBase(ModelBase):
+class OLTPModelBase(DeclarativeBase, ModelBase):
     """
     OLTP模型基类
     """

@@ -9,7 +9,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from apis import ROUTERS
-from utils import generate_key
+from utils import *
 
 
 def create_app():

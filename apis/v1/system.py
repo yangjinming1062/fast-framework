@@ -1,3 +1,6 @@
+from typing import Annotated
+
+from fastapi import Body
 from fastapi import Query
 from sqlalchemy import true
 
@@ -27,18 +30,41 @@ def get_users(params: UsersRequest) -> UsersResponse:
 
 
 @router.post('/users', status_code=201, summary='新建用户')
-def post_user(params: UserCreateRequest):
-    params.password = generate_key(params.password)
-    return orm_create(User, params)
+def post_user(
+        account: Annotated[str, Body()],
+        username: Annotated[str, Body()],
+        password: Annotated[str, Body()],
+        phone: Annotated[str, Body()],
+        email: Annotated[str, Body()],
+):
+    user = User()
+    user.account = account
+    user.username = username
+    user.password = generate_key(password)
+    user.phone = phone
+    user.email = email
+    return orm_create(user, '用户名已存在')
 
 
 @router.patch('/users/{user_id}', status_code=204, summary='编辑用户')
-def patch_user(user_id, params: UserUpdateRequest):
-    return orm_update(User, user_id, params)
+def patch_user(
+        user_id,
+        account: Annotated[str, Body()] = None,
+        username: Annotated[str, Body()] = None,
+        phone: Annotated[str, Body()] = None,
+        email: Annotated[str, Body()] = None,
+):
+    params = {
+        'account': account,
+        'username': username,
+        'phone': phone,
+        'email': email,
+    }
+    return orm_update(User, user_id, params, '用户名已存在')
 
 
 @router.delete('/users', status_code=204, summary='删除用户')
-def delete_user(params: list[str] = Query()):
+def delete_user(params: Annotated[list[str], Query()]):
     with DatabaseManager() as db:
         for uid in params:
             user = db.get(User, uid)

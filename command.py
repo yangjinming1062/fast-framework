@@ -10,18 +10,36 @@ Options:
 """
 from docopt import docopt
 
-from utils import exceptions
+from defines import *
+from utils import *
 
 
 @exceptions()
 def init_user(account, username, password):
     """
-    添加初始用户
+    添加初始用户。
+
+    Args:
+        account (str): 账号。
+        username (str): 用户名。
+        password (str): 密码。
 
     Returns:
-
+        None
     """
-    pass
+    with DatabaseManager() as db:
+        uid = generate_key(account)  # 保证多环境管理员的id一致
+        user = db.get(User, uid) or User()
+        user.id = uid
+        user.account = account
+        user.username = username
+        user.password = generate_key(password)
+        user.role = RoleEnum.Admin
+        user.phone = '-'
+        user.email = '-'
+        user.updated_at = datetime.now()
+        db.add(user)
+        print('Success!')
 
 
 def init_database():
@@ -29,7 +47,7 @@ def init_database():
     初始化数据库
 
     Returns:
-
+        None
     """
     pass
 

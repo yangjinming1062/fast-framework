@@ -17,11 +17,10 @@ from jose import JWTError
 from jose import jwt
 from sqlalchemy import Column
 from sqlalchemy import func
-from sqlalchemy import insert
 from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy import text
-from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 
 from defines import *
 from utils import *
@@ -64,63 +63,54 @@ def get_router(path, name, skip_auth=False):
         return APIRouter(prefix=url_prefix, tags=[name], dependencies=[Depends(get_user)])
 
 
-def orm_create(cls, params, repeat_msg='关键字重复') -> str:
+def orm_create(instance, error_msg='无效输入') -> str:
     """
-    创建数据实例。
+    新增数据实例。
 
     Args:
-        cls: ORM类定义。
-        params (BaseModel): 请求参数。
-        repeat_msg (str): 数据重复时的错误消息。
+        instance: ORM类实例。
+        error_msg (str): 数据重复时的错误消息。
 
     Returns:
         str: 新增数据的ID。
     """
-    # 将模型转储到字典中
-    params = params.model_dump()
-    # 因为updated_at在定义时是可选的，所以要加上默认值
-    params['updated_at'] = datetime.now()
-    # 剔除掉不属于该ORM类的参数
-    _params = {k: v for k, v in params.items() if k in cls.get_columns()}
-    # 执行SQL插入语句
-    result, flag = execute_sql(insert(cls).values(**_params))
-    # 检查结果，如果成功则返回ID
-    if flag:
-        return result
-    else:
-        # 如果存在重复记录，则返回repeat_msg，否则按照默认的错误信息
-        if result.lower().find('duplicate') > 0:
-            raise HTTPException(422, repeat_msg)
-        else:
-            raise HTTPException(422, '无效输入')
+    instance.updated_at = datetime.now()
+    try:
+        with DatabaseManager() as db:
+            db.add(instance)
+            db.flush()
+            return instance.id
+    except IntegrityError as ex:
+        logger.debug(ex)
+        raise HTTPException(422, error_msg)
 
 
-def orm_update(cls, resource_id, params, error_msg='无效输入'):
+def orm_update(cls, instance_id, params, error_msg='无效输入'):
     """
     更新ORM数据。
 
     Args:
         cls: ORM类定义。
-        resource_id (str): 数据的ID。
-        params (BaseModel): 更新参数。
+        instance_id (str): 数据的ID。
+        params (dict): 更新参数。
         error_msg (str): 更新失败时的错误消息。
 
     Returns:
         None
     """
-    # 转储模型并排除未设置的字段
-    params = params.model_dump(exclude_unset=True)
-    # 因为updated_at在定义时是可选的，所以要加上默认值
     params['updated_at'] = datetime.now()
-    # 剔除掉不属于该ORM类的参数
-    _params = {k: v for k, v in params.items() if k in cls.get_columns()}
-    # 执行SQL更新语句
-    result, flag = execute_sql(update(cls).where(cls.id == resource_id).values(**_params))
-    # 检查执行结果
-    if flag and not result:
-        raise HTTPException(404, '未找到对应资源')
-    elif not flag:
-        raise HTTPException(422, error_msg)
+    with DatabaseManager() as db:
+        if item := db.get(cls, instance_id):
+            try:
+                for key, value in params.items():
+                    if value is not None:
+                        setattr(item, key, value)
+                db.commit()
+            except IntegrityError as ex:
+                logger.debug(ex)
+                raise HTTPException(422, error_msg)
+        else:
+            raise HTTPException(404, '未找到对应资源')
 
 
 def orm_delete(cls, data):

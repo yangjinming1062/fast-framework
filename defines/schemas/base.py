@@ -41,10 +41,4 @@ class PaginateResponse(BaseModel):
     分页类响应共同参数定义
     """
     total: int = Field(default=0, title='总数')
-
-    @property
-    def data(self):
-        """
-        数据列表: 需要具体子类实现
-        """
-        raise NotImplementedError
+    data: list

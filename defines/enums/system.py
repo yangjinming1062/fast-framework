@@ -13,5 +13,5 @@ class DBTypeEnum(Enum):
     """
     数据连接类型
     """
-    OLAP = 'olap'
-    OLTP = 'oltp'
+    OLAP = 'clickhouse'
+    OLTP = 'postgresql'

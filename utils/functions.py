@@ -74,7 +74,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
             session_type = DatabaseManager.get_session_type(db)
         if session_type == DBTypeEnum.OLTP:
             if sql.is_select:
-                executed = db.execute(sql).fetchall()
+                executed = db.execute(sql)
                 if fetchall:
                     result = executed.scalars().all() if scalar else executed.fetchall()
                 else:

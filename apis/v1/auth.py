@@ -15,7 +15,8 @@ def _create_token(identity):
 
 @router.post('/login')
 async def login(data: LoginRequest = Body()) -> LoginResponse:
-    if user := execute_sql(select(User).where(User.account == data.account), fetchall=False):
+    user, _ = execute_sql(select(User).where(User.account == data.account), fetchall=False)
+    if user:
         if generate_key(data.password) == user.password:
             return LoginResponse(**{
                 'username': user.username,

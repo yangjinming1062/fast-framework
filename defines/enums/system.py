@@ -7,3 +7,11 @@ class RoleEnum(Enum):
     """
     Admin = '超级管理员'
     User = '用户'
+
+
+class DBTypeEnum(Enum):
+    """
+    数据连接类型
+    """
+    OLAP = 'olap'
+    OLTP = 'oltp'

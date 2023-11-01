@@ -34,7 +34,8 @@ async def get_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
         if uid := payload.get('uid'):
-            if user := execute_sql(select(User).where(User.id == uid), fetchall=False):
+            user, _ = execute_sql(select(User).where(User.id == uid), fetchall=False)
+            if user:
                 return user
             else:
                 raise HTTPException(404)
@@ -162,7 +163,7 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     if not with_total:
         # 如果查询的列中不包含总数则先查总数再附加分页及排序条件
         total_sql = select(func.count()).select_from(sql)
-        total = execute_sql(total_sql, fetchall=False, scalar=True, session=session)
+        total, _ = execute_sql(total_sql, fetchall=False, scalar=True, session=session)
     else:
         # 最后一列是总数时跳过查询总数
         total = 0
@@ -185,7 +186,7 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
             direct = 'ASC'
         sql = sql.order_by(text(f'{column_name} {direct}'))
     # 执行查询
-    data = execute_sql(sql, fetchall=True, scalar=False, session=session)
+    data, _ = execute_sql(sql, fetchall=True, scalar=False, session=session)
     # 应用format_func（如果提供）
     if format_func:
         data = list(map(format_func, data))

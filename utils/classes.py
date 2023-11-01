@@ -7,17 +7,24 @@ Description : 工具类定义
 """
 import base64
 import json
+from datetime import datetime
+from enum import Enum
 from ipaddress import IPv4Address
+from ipaddress import IPv6Address
 
-import redis
 from clickhouse_driver import Client
 from confluent_kafka import Consumer
 from confluent_kafka import Producer
+from redis import ConnectionPool
+from redis import Redis
+from redis.asyncio import ConnectionPool as AsyncConnectionPool
+from redis.asyncio import Redis as AsyncRedis
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
 
-from defines import *
+from defines import CONFIG
+from defines import DBTypeEnum
 from utils import logger
 from .constants import Constants
 
@@ -34,10 +41,14 @@ class Singleton(type):
 
 
 class RedisManager(metaclass=Singleton):
+    """
+    Redis管理器，使用get_client方法获取目标数据库的redis客户端
+    """
+    _async_clients = {}
     _clients = {}
 
     @staticmethod
-    def get_client(db=0) -> redis.Redis:
+    def get_client(db=0):
         """
         获取Redis的client。
 
@@ -45,7 +56,7 @@ class RedisManager(metaclass=Singleton):
             db (int): redis的数据库序号，默认0。
 
         Returns:
-            redis.Redis: client实例。
+            Redis: client实例。
         """
         # 每个数据库复用同一个Client，判断是否存在
         if db not in RedisManager._clients:
@@ -56,13 +67,41 @@ class RedisManager(metaclass=Singleton):
                 'password': CONFIG.redis_password,
                 'decode_responses': True,
             }
-            RedisManager._clients[db] = redis.Redis(connection_pool=redis.ConnectionPool(db=db, **redis_config))
+            RedisManager._clients[db] = Redis(connection_pool=ConnectionPool(db=db, **redis_config))
 
         # 返回指定db的client实例
         return RedisManager._clients[db]
 
+    @staticmethod
+    def get_async_client(db=0):
+        """
+        获取Redis的client。
+
+        Args:
+            db (int): redis的数据库序号，默认0。
+
+        Returns:
+            AsyncRedis: client实例。
+        """
+        # 每个数据库复用同一个Client，判断是否存在
+        if db not in RedisManager._async_clients:
+            # 添加一个指定db的client实例
+            redis_config = {
+                'host': CONFIG.redis_host,
+                'port': CONFIG.redis_port,
+                'password': CONFIG.redis_password,
+                'decode_responses': True,
+            }
+            RedisManager._async_clients[db] = AsyncRedis(connection_pool=AsyncConnectionPool(db=db, **redis_config))
+
+        # 返回指定db的client实例
+        return RedisManager._async_clients[db]
+
 
 class KafkaManager(metaclass=Singleton):
+    """
+    Kafka管理器，简化生成和消费的处理
+    """
     _consumers = {}
 
     def __init__(self):
@@ -184,29 +223,26 @@ class KafkaManager(metaclass=Singleton):
 
 
 class DatabaseManager:
-
-    __slots__ = ('session', 'type', 'autocommit', 'inherit', 'rollback')
+    """
+    数据库管理，统一使用该类实例执行数据库操作
+    """
+    __slots__ = ('session', 'type', 'autocommit', 'inherit')
     session: Session | Client
 
-    def __init__(self, session=None, session_type='oltp', autocommit=True):
+    def __init__(self, session=None, session_type=DBTypeEnum.OLTP, autocommit=True):
         if session is None:
             self.inherit = False
             self.autocommit = autocommit
-            if session_type == 'oltp':
-                self.type = 'oltp'
+            self.type = session_type
+            if session_type == DBTypeEnum.OLTP:
                 self.session = Session(OLTP_ENGINE)
-            elif session_type == 'olap':
-                self.type = 'olap'
+            elif session_type == DBTypeEnum.OLAP:
                 self.session = Client.from_url(CONFIG.olap_uri)
         else:
             self.inherit = True
             self.autocommit = False
             self.session = session
-            if isinstance(session, Client):
-                self.type = 'olap'
-            else:
-                self.type = 'oltp'
-        self.rollback = self.type == 'oltp'
+            self.type = self.get_session_type(session)
 
     def __enter__(self):
         """
@@ -227,17 +263,29 @@ class DatabaseManager:
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
         if exc_value:
-            if self.rollback:
+            if self.type == DBTypeEnum.OLTP:
                 self.session.rollback()
         self.close()
 
     def close(self):
-        if self.type == 'oltp':
+        if self.type == DBTypeEnum.OLTP:
             if self.autocommit:
                 self.session.commit()
             self.session.close()
-        elif self.type == 'olap':
+        elif self.type == DBTypeEnum.OLAP:
             self.session.disconnect()
+
+    @staticmethod
+    def get_session_type(session):
+        """
+        获取session对象的数据库类型
+        Args:
+            session (Session | Client):数据库连接
+
+        Returns:
+            DBTypeEnum: 数据连接类型
+        """
+        return DBTypeEnum.OLAP if isinstance(session, Client) else DBTypeEnum.OLTP
 
 
 class JSONExtensionEncoder(json.JSONEncoder):
@@ -252,9 +300,7 @@ class JSONExtensionEncoder(json.JSONEncoder):
             return obj.strftime(Constants.DEFINE_DATE_FORMAT)
         if isinstance(obj, Row):
             return dict(obj._mapping)
-        if isinstance(obj, ModelBase):
-            return obj.json()
-        if isinstance(obj, IPv4Address):
+        if isinstance(obj, (IPv4Address, IPv6Address)):
             return str(obj)
         if isinstance(obj, bytes):
             # 将bytes类型转为base64编码的字符串

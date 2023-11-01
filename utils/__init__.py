@@ -10,7 +10,7 @@ import sys
 
 from loguru import logger
 
-from config import Configuration
+from .classes import CONFIG
 from .classes import DatabaseManager
 from .classes import JSONExtensionEncoder
 from .classes import KafkaManager
@@ -20,8 +20,6 @@ from .constants import Constants
 from .functions import exceptions
 from .functions import execute_sql
 from .functions import generate_key
-
-CONFIG = Configuration()
 
 if CONFIG.log_dir:
     # 日志记录

@@ -65,7 +65,7 @@ def patch_user(
 
 @router.delete('/users', status_code=204, summary='删除用户')
 def delete_user(params: Annotated[list[str], Query()]):
-    with DatabaseManager() as db:
+    with OLTPManager() as db:
         for uid in params:
             user = db.get(User, uid)
             if user.role != RoleEnum.Admin:

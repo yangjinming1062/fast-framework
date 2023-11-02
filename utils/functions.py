@@ -8,10 +8,11 @@ Description : 基础方法的定义实现
 import uuid
 from functools import wraps
 
-from defines import DBTypeEnum
 from defines import OLAPModelsDict
 from utils import logger
 from .classes import DatabaseManager
+from .classes import OLAPManager
+from .classes import OLTPManager
 
 _OLAP_TABLES = {item.__tablename__ for item in OLAPModelsDict.values()}
 
@@ -61,9 +62,9 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
     if session is None:
         inherit = False
         if sql.is_select:
-            session_type = DBTypeEnum.OLAP if sql.froms[0].name in _OLAP_TABLES else DBTypeEnum.OLTP
+            session_type = OLAPManager if sql.froms[0].name in _OLAP_TABLES else OLTPManager
         else:
-            session_type = DBTypeEnum.OLAP if sql.table.name in _OLAP_TABLES else DBTypeEnum.OLTP
+            session_type = OLAPManager if sql.table.name in _OLAP_TABLES else OLTPManager
     else:
         inherit = True
         session_type = None
@@ -72,7 +73,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
         if not inherit:
             # 如果是传递了session对象则session_type初始为None，这里需要明确具体的类型
             session_type = DatabaseManager.get_session_type(db)
-        if session_type == DBTypeEnum.OLTP:
+        if session_type is OLTPManager:
             if sql.is_select:
                 executed = db.execute(sql)
                 if fetchall:
@@ -95,7 +96,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                 result = db.execute(sql)
                 db.flush()
                 return result.rowcount, True if result else 'SQL执行失败', False
-        elif session_type == DBTypeEnum.OLAP:
+        elif session_type is OLAPManager:
             if sql.is_select:
                 executed = db.execute(sql.compile(compile_kwargs={'literal_binds': True}).string)
                 if fetchall:

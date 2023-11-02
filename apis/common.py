@@ -76,7 +76,7 @@ def orm_create(instance, error_msg='无效输入') -> str:
     """
     instance.updated_at = datetime.now()
     try:
-        with DatabaseManager() as db:
+        with OLTPManager() as db:
             db.add(instance)
             db.flush()
             return instance.id
@@ -99,7 +99,7 @@ def orm_update(cls, instance_id, params, error_msg='无效输入'):
         None
     """
     params['updated_at'] = datetime.now()
-    with DatabaseManager() as db:
+    with OLTPManager() as db:
         if item := db.get(cls, instance_id):
             try:
                 for key, value in params.items():
@@ -125,7 +125,7 @@ def orm_delete(cls, data):
         None
     """
     try:
-        with DatabaseManager() as db:
+        with OLTPManager() as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)

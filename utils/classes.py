@@ -24,7 +24,6 @@ from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
 
 from defines import CONFIG
-from defines import DBTypeEnum
 from utils import logger
 from .constants import Constants
 
@@ -224,18 +223,17 @@ class KafkaManager:
 
 class DatabaseManager:
     """
-    数据库管理，统一使用该类实例执行数据库操作
+    数据库管理: 优先使用OLAPManager或OLTPManager子类，避免直接调用该类
     """
     __slots__ = ('session', 'type', 'autocommit')
-    session: Session | Client
 
-    def __init__(self, session=None, session_type=DBTypeEnum.OLTP, autocommit=True):
+    def __init__(self, session=None, session_type=None, autocommit=True):
         if session is None:
             self.autocommit = autocommit
             self.type = session_type
-            if session_type == DBTypeEnum.OLTP:
+            if session_type is OLTPManager:
                 self.session = Session(OLTP_ENGINE)
-            elif session_type == DBTypeEnum.OLAP:
+            elif session_type is OLAPManager:
                 self.session = Client.from_url(CONFIG.olap_uri)
         else:
             self.autocommit = False
@@ -261,16 +259,16 @@ class DatabaseManager:
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
         if exc_value:
-            if self.type == DBTypeEnum.OLTP:
+            if self.type is OLTPManager:
                 self.session.rollback()
         self.close()
 
     def close(self):
-        if self.type == DBTypeEnum.OLTP:
+        if self.type is OLTPManager:
             if self.autocommit:
                 self.session.commit()
             self.session.close()
-        elif self.type == DBTypeEnum.OLAP:
+        elif self.type is OLAPManager:
             self.session.disconnect()
 
     @staticmethod
@@ -281,9 +279,29 @@ class DatabaseManager:
             session (Session | Client):数据库连接
 
         Returns:
-            DBTypeEnum: 数据连接类型
+            OLAPManager | OLTPManager: 数据连接类型
         """
-        return DBTypeEnum.OLAP if isinstance(session, Client) else DBTypeEnum.OLTP
+        return OLAPManager if isinstance(session, Client) else OLTPManager
+
+
+class OLAPManager(DatabaseManager):
+    """
+    OLAP数据库管理
+    """
+    session: Client
+
+    def __init__(self):
+        super().__init__(session_type=OLAPManager)
+
+
+class OLTPManager(DatabaseManager):
+    """
+    OLTP数据库管理
+    """
+    session: Session
+
+    def __init__(self, autocommit=True):
+        super().__init__(session_type=OLTPManager, autocommit=autocommit)
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

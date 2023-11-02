@@ -40,7 +40,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class RedisManager(metaclass=Singleton):
+class RedisManager:
     """
     Redis管理器，使用get_client方法获取目标数据库的redis客户端
     """
@@ -98,17 +98,14 @@ class RedisManager(metaclass=Singleton):
         return RedisManager._async_clients[db]
 
 
-class KafkaManager(metaclass=Singleton):
+class KafkaManager:
     """
     Kafka管理器，简化生成和消费的处理
     """
-    _consumers = {}
-
-    def __init__(self):
-        self.producer = Producer(CONFIG.kafka_producer_config)
+    PRODUCER = Producer(CONFIG.kafka_producer_config)
 
     @staticmethod
-    def _get_consumer(*topic) -> Consumer:
+    def get_consumer(*topic):
         """
         创建一个消费者。
 
@@ -118,14 +115,9 @@ class KafkaManager(metaclass=Singleton):
         Returns:
             Consumer: 消费者实例。
         """
-        # 检查指定主题是否已经存在（这里topic其实是一个tuple）
-        if topic not in KafkaManager._consumers:
-            # 不存在则新建一个消费者
-            KafkaManager._consumers[topic] = Consumer(CONFIG.kafka_consumer_config)
-            KafkaManager._consumers[topic].subscribe(list(topic))
-
-        # 返回消费者实例
-        return KafkaManager._consumers[topic]
+        consumer = Consumer(CONFIG.kafka_consumer_config)
+        consumer.subscribe(list(topic))
+        return consumer
 
     @staticmethod
     def delivery_report(err, msg):
@@ -144,14 +136,14 @@ class KafkaManager(metaclass=Singleton):
             logger.error('Kafka发生失败', err)
 
     @staticmethod
-    def consume(*topic, limit=None, consumer=None, need_load=True):
+    def consume(*topic, consumer=None, limit=None, need_load=True):
         """
         消费指定主题的数据。
 
         Args:
             topic: 需要消费的主题。
-            limit (int, optional): 批处理中要使用的消息数。默认值为None，表示使用单个消息。
-            consumer (Consumer, optional): 默认为None可以使用config中的配置自动创建一个消费者，也可以指定特定的消费者来消费。
+            consumer (Consumer, optional): 默认为None时会自动创建一个消费者，并在方法结束调用后取消订阅并关闭自动创建的消费者对象。
+            limit (int, optional): 批处理中要使用的消息数。默认值为None，表示每次返回单个消息。
             need_load (bool, optional): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
 
         Returns:
@@ -167,37 +159,30 @@ class KafkaManager(metaclass=Singleton):
         def load(msg):
             return json.loads(msg.value().decode('utf-8'))
 
-        consumer = consumer or KafkaManager._get_consumer(topic)
-        if limit:
-            # 批量消费
-            msgs = consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout)
-            return [load(msg) for msg in msgs] if need_load else [msg.value() for msg in msgs]
-        else:
-            # 持续轮询，返回收到的第一条非空消息
-            while True:
-                msg = consumer.poll(1.0)
-                if msg is None:
-                    continue
-                if msg.error():
-                    raise ValueError(msg.error())
-                yield load(msg) if need_load else msg.value()
+        if flag := consumer is None:
+            consumer = KafkaManager.get_consumer(*topic)
+        try:
+            if limit:
+                # 批量消费
+                msgs = consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout)
+                return [load(msg) for msg in msgs] if need_load else [msg.value() for msg in msgs]
+            else:
+                # 持续轮询，返回收到的第一条非空消息
+                while True:
+                    msg = consumer.poll(1.0)
+                    if msg is None:
+                        continue
+                    if msg.error():
+                        raise ValueError(msg.error())
+                    yield load(msg) if need_load else msg.value()
+        finally:
+            # 不是函数内创建的消费者不进行取消订阅以及关闭操作
+            if flag:
+                consumer.unsubscribe()
+                consumer.close()
 
-    def _produce_data(self, topic, value):
-        """
-        单次发送指定主题的数据。
-
-        Args:
-            topic (str): 主题的名称。
-            value (dict | str): 要发送的数据。
-
-        Returns:
-            None
-        """
-        if isinstance(value, dict):
-            value = json.dumps(value, cls=JSONExtensionEncoder)
-        self.producer.produce(topic=topic, value=value, callback=KafkaManager.delivery_report)
-
-    def produce(self, topic, data):
+    @staticmethod
+    async def produce(topic, data):
         """
         生成指定主题的数据。
 
@@ -208,30 +193,44 @@ class KafkaManager(metaclass=Singleton):
         Returns:
             None
         """
+
+        async def produce_data(value):
+            """
+            单次发送指定主题的数据。
+
+            Args:
+                value (dict | str): 要发送的数据。
+
+            Returns:
+                None
+            """
+            if isinstance(value, dict):
+                value = json.dumps(value, cls=JSONExtensionEncoder)
+            KafkaManager.PRODUCER.produce(topic=topic, value=value, callback=KafkaManager.delivery_report)
+
         if isinstance(data, list):
             index = 1
             for item in data:
                 if index >= CONFIG.kafka_producer_queue_size:
-                    self.producer.poll(0)
+                    KafkaManager.PRODUCER.poll(0)
                     index = 1
-                self._produce_data(topic, item)
+                await produce_data(item)
                 index += 1
         else:
-            self._produce_data(topic, data)
+            await produce_data(data)
         # 确保交付
-        self.producer.poll(0)
+        KafkaManager.PRODUCER.poll(0)
 
 
 class DatabaseManager:
     """
     数据库管理，统一使用该类实例执行数据库操作
     """
-    __slots__ = ('session', 'type', 'autocommit', 'inherit')
+    __slots__ = ('session', 'type', 'autocommit')
     session: Session | Client
 
     def __init__(self, session=None, session_type=DBTypeEnum.OLTP, autocommit=True):
         if session is None:
-            self.inherit = False
             self.autocommit = autocommit
             self.type = session_type
             if session_type == DBTypeEnum.OLTP:
@@ -239,7 +238,6 @@ class DatabaseManager:
             elif session_type == DBTypeEnum.OLAP:
                 self.session = Client.from_url(CONFIG.olap_uri)
         else:
-            self.inherit = True
             self.autocommit = False
             self.session = session
             self.type = self.get_session_type(session)

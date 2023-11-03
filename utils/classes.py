@@ -293,6 +293,18 @@ class OLAPManager(DatabaseManager):
     def __init__(self):
         super().__init__(session_type=OLAPManager)
 
+    def __enter__(self):
+        """
+        with的进入方法，返回当前的session。
+        """
+        return self.session
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        当离开上下文时关闭数据库连接。
+        """
+        self.close()
+
 
 class OLTPManager(DatabaseManager):
     """
@@ -302,6 +314,20 @@ class OLTPManager(DatabaseManager):
 
     def __init__(self, autocommit=True):
         super().__init__(session_type=OLTPManager, autocommit=autocommit)
+
+    def __enter__(self):
+        """
+        with的进入方法，返回当前的session。
+        """
+        return self.session
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        当离开上下文时关闭数据库连接。
+        """
+        if exc_value:
+            self.session.rollback()
+        self.close()
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

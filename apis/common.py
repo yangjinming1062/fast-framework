@@ -76,7 +76,7 @@ def orm_create(instance, error_msg='无效输入') -> str:
     """
     instance.updated_at = datetime.now()
     try:
-        with OLTPManager() as db:
+        with PostgresManager() as db:
             db.add(instance)
             db.flush()
             return instance.id
@@ -99,7 +99,7 @@ def orm_update(cls, instance_id, params, error_msg='无效输入'):
         None
     """
     params['updated_at'] = datetime.now()
-    with OLTPManager() as db:
+    with PostgresManager() as db:
         if item := db.get(cls, instance_id):
             try:
                 for key, value in params.items():
@@ -125,7 +125,7 @@ def orm_delete(cls, data):
         None
     """
     try:
-        with OLTPManager() as db:
+        with PostgresManager() as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)
@@ -227,7 +227,7 @@ def add_filter(sql, column, value, op_type):
             return sql.where(func.text(column).like(f'%{value}%'))
         elif op_type == 'ip':
             # Clickhouse添加IP列的过滤条件
-            return OLAPModelBase.add_ip_filter(sql, column, value)
+            return ClickhouseModelBase.add_ip_filter(sql, column, value)
         else:
             # 其他类似于==,>,<等这种运算符直接添加
             return sql.where(eval(f'column {op_type} value'))

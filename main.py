@@ -19,7 +19,7 @@ def create_app():
     Returns:
         FastAPI: 添加上路由信息的APP。
     """
-    _app = FastAPI(title='FastAPICli', description='', version='main', generate_unique_id_function=generate_key)
+    _app = FastAPI(title='API', description='', version='main', generate_unique_id_function=generate_key)
 
     for router in ROUTERS:
         _app.include_router(router)

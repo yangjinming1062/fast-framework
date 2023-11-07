@@ -75,7 +75,7 @@ class ModelBase:
         return SECRET.decrypt(data).decode('utf-8')
 
 
-class OLTPModelBase(DeclarativeBase, ModelBase):
+class PostgresModelBase(DeclarativeBase, ModelBase):
     """
     OLTP模型基类
     """
@@ -84,7 +84,7 @@ class OLTPModelBase(DeclarativeBase, ModelBase):
     id: Mapped[str_id] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-12:])
 
 
-class OLAPModelBase(DeclarativeBase, ModelBase):
+class ClickhouseModelBase(DeclarativeBase, ModelBase):
     """
     OLAP模型基类
     """

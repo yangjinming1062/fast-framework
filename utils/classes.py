@@ -27,7 +27,7 @@ from defines import CONFIG
 from utils import logger
 from .constants import Constants
 
-OLTP_ENGINE = create_engine(CONFIG.oltp_uri, pool_size=150, pool_recycle=60)
+PG_ENGINE = create_engine(CONFIG.postgres_uri, pool_size=150, pool_recycle=60)
 
 
 class Singleton(type):
@@ -231,10 +231,10 @@ class DatabaseManager:
         if session is None:
             self.autocommit = autocommit
             self.type = session_type
-            if session_type is OLTPManager:
-                self.session = Session(OLTP_ENGINE)
-            elif session_type is OLAPManager:
-                self.session = Client.from_url(CONFIG.olap_uri)
+            if session_type is PostgresManager:
+                self.session = Session(PG_ENGINE)
+            elif session_type is ClickhouseManager:
+                self.session = Client.from_url(CONFIG.clickhouse_uri)
         else:
             self.autocommit = False
             self.session = session
@@ -259,16 +259,16 @@ class DatabaseManager:
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
         if exc_value:
-            if self.type is OLTPManager:
+            if self.type is PostgresManager:
                 self.session.rollback()
         self.close()
 
     def close(self):
-        if self.type is OLTPManager:
+        if self.type is PostgresManager:
             if self.autocommit:
                 self.session.commit()
             self.session.close()
-        elif self.type is OLAPManager:
+        elif self.type is ClickhouseManager:
             self.session.disconnect()
 
     @staticmethod
@@ -279,19 +279,19 @@ class DatabaseManager:
             session (Session | Client):数据库连接
 
         Returns:
-            OLAPManager | OLTPManager: 数据连接类型
+            ClickhouseManager | PostgresManager: 数据连接类型
         """
-        return OLAPManager if isinstance(session, Client) else OLTPManager
+        return ClickhouseManager if isinstance(session, Client) else PostgresManager
 
 
-class OLAPManager(DatabaseManager):
+class ClickhouseManager(DatabaseManager):
     """
     OLAP数据库管理
     """
     session: Client
 
     def __init__(self):
-        super().__init__(session_type=OLAPManager)
+        super().__init__(session_type=ClickhouseManager)
 
     def __enter__(self):
         """
@@ -306,14 +306,14 @@ class OLAPManager(DatabaseManager):
         self.close()
 
 
-class OLTPManager(DatabaseManager):
+class PostgresManager(DatabaseManager):
     """
     OLTP数据库管理
     """
     session: Session
 
     def __init__(self, autocommit=True):
-        super().__init__(session_type=OLTPManager, autocommit=autocommit)
+        super().__init__(session_type=PostgresManager, autocommit=autocommit)
 
     def __enter__(self):
         """

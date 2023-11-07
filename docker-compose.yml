@@ -1,24 +1,21 @@
 version: '3.1'
 services:
-  olap:
+  clickhouse:
     restart: always
     image: bitnami/clickhouse:23.4.2
     env_file: .env
     volumes:
-#      - ./persistence/olap:/bitnami/clickhouse
-      - ./migrations/olap:/docker-entrypoint-initdb.d
+      - ./data/migration:/docker-entrypoint-initdb.d
     ports:
       - "8123:8123"
       - "9000:9000"
     depends_on:
       - backend  # 需要backend先执行了initDB.sh把迁移目录拷贝出来，如果宿主机有了则可以不依赖
 
-  oltp:
+  postgres:
     restart: always
     image: bitnami/postgresql:14.8.0
     env_file: .env
-#    volumes:
-#      - ./persistence/oltp:/bitnami/postgresql
     ports:
       - "5432:5432"
 
@@ -26,10 +23,6 @@ services:
     restart: always
     image: bitnami/kafka:3.4
     env_file: .env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-#    volumes:
-#      - ./persistence/kafka:/bitnami/kafka
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -47,11 +40,7 @@ services:
       context: ./
       dockerfile: Dockerfile
     env_file: .env
-    volumes:
-      - ./migrations:/fast/migrations
-      - ./logs:/fast/logs
     ports:
       - "8080:8080"
-    command: "/bin/bash -c 'source ./initDB.sh && uvicorn main:app --port=8080'"
     depends_on:
-      - oltp  # initDB.sh需要初始化数据库
+      - postgres  # initDB.sh需要初始化数据库

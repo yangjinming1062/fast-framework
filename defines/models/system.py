@@ -2,7 +2,7 @@ from .base import *
 from ..enums import *
 
 
-class User(OLTPModelBase, TimeColumns):
+class User(PostgresModelBase, TimeColumns):
     """
     用户信息
     """

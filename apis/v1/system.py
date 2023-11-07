@@ -1,6 +1,7 @@
 from fastapi import Body
 from fastapi import Query
 from sqlalchemy import true
+from sqlalchemy import update
 
 from ..common import *
 
@@ -63,8 +64,4 @@ def patch_user(
 
 @router.delete('/users', status_code=204, summary='删除用户')
 def delete_user(params: list[str] = Query()):
-    with OLTPManager() as db:
-        for uid in params:
-            user = db.get(User, uid)
-            if user.role != RoleEnum.Admin:
-                user.valid = False
+    execute_sql(update(User).where(User.id.in_(params), User.role != RoleEnum.Admin).values(valid=False))

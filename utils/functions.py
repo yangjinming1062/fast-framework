@@ -8,13 +8,13 @@ Description : 基础方法的定义实现
 import uuid
 from functools import wraps
 
-from defines import OLAPModelsDict
+from defines import ClickhouseModelsDict
 from utils import logger
+from .classes import ClickhouseManager
 from .classes import DatabaseManager
-from .classes import OLAPManager
-from .classes import OLTPManager
+from .classes import PostgresManager
 
-_OLAP_TABLES = {item.__tablename__ for item in OLAPModelsDict.values()}
+_CH_TABLES = {item.__tablename__ for item in ClickhouseModelsDict.values()}
 
 
 def exceptions(default=None):
@@ -62,9 +62,9 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
     if session is None:
         inherit = False
         if sql.is_select:
-            session_type = OLAPManager if sql.froms[0].name in _OLAP_TABLES else OLTPManager
+            session_type = ClickhouseManager if sql.froms[0].name in _CH_TABLES else PostgresManager
         else:
-            session_type = OLAPManager if sql.table.name in _OLAP_TABLES else OLTPManager
+            session_type = ClickhouseManager if sql.table.name in _CH_TABLES else PostgresManager
     else:
         inherit = True
         session_type = None
@@ -73,7 +73,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
         if not inherit:
             # 如果是传递了session对象则session_type初始为None，这里需要明确具体的类型
             session_type = DatabaseManager.get_session_type(db)
-        if session_type is OLTPManager:
+        if session_type is PostgresManager:
             if sql.is_select:
                 executed = db.execute(sql)
                 if fetchall:
@@ -96,7 +96,7 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                 result = db.execute(sql)
                 db.flush()
                 return result.rowcount, True if result else 'SQL执行失败', False
-        elif session_type is OLAPManager:
+        elif session_type is ClickhouseManager:
             if sql.is_select:
                 executed = db.execute(sql.compile(compile_kwargs={'literal_binds': True}).string)
                 if fetchall:
@@ -120,19 +120,20 @@ def execute_sql(sql, *, fetchall=False, scalar=True, params=None, session=None):
                 return result.rowcount, True if result else 'SQL执行失败', False
 
 
-def generate_key(*args):
+def generate_key(*args, need_uuid=False):
     """
     根据输入的参数生成一个12个字符的key。
 
     Args:
         *args: 用于生成Key的参数。
+        need_uuid (bool): 是否需要返回uuid格式的key，默认False返回短字符串。
 
     Returns:
-        str: 生成的Key。
+        str | UUID: 生成的Key。
     """
     if args:
         source = '-'.join(list(map(str, args)))
         tmp = uuid.uuid5(uuid.NAMESPACE_DNS, source)
     else:
         tmp = uuid.uuid4()
-    return tmp.hex[-12:]
+    return tmp if need_uuid else tmp.hex[-12:]

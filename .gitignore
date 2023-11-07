@@ -38,3 +38,4 @@ venv/
 # Custom
 logs
 persistence
+dev.env

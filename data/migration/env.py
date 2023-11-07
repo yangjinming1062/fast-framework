@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from defines import CONFIG
-from defines import OLTPModelBase
+from defines import PostgresModelBase
 
 config = context.config
 
@@ -14,9 +14,9 @@ if config.config_file_name is not None:
 
 config.set_main_option(
     'sqlalchemy.url',
-    CONFIG.oltp_uri,
+    CONFIG.postgres_uri,
 )
-target_metadata = OLTPModelBase.metadata
+target_metadata = PostgresModelBase.metadata
 
 
 def run_migrations_offline() -> None:

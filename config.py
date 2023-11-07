@@ -23,15 +23,15 @@ class Configuration(BaseSettings):
     # 默认IP
     host: str = '127.0.0.1'
     # OLTP数据库相关参数
-    oltp_address: str = f'{host}:5432'
-    oltp_username: str = Field(alias='POSTGRESQL_USERNAME')
-    oltp_password: str = Field(alias='POSTGRESQL_PASSWORD')
-    oltp_db: str = Field(alias='POSTGRESQL_DATABASE')
+    pg_address: str = f'{host}:5432'
+    pg_username: str = Field(alias='POSTGRESQL_USERNAME')
+    pg_password: str = Field(alias='POSTGRESQL_PASSWORD')
+    pg_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
-    olap_address: str = f'{host}:9000'
-    olap_username: str = Field(alias='CLICKHOUSE_ADMIN_USER')
-    olap_password: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
-    olap_db: str = Field(alias='CLICKHOUSE_DATABASE')
+    ch_address: str = f'{host}:9000'
+    ch_username: str = Field(alias='CLICKHOUSE_ADMIN_USER')
+    ch_password: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
+    ch_db: str = Field(alias='CLICKHOUSE_DATABASE')
     # REDIS相关参数
     redis_host: str = host
     redis_port: int = 6379
@@ -52,12 +52,12 @@ class Configuration(BaseSettings):
     # 拓展属性
 
     @property
-    def oltp_uri(self):
-        return f'postgresql+psycopg://{self.oltp_username}:{self.oltp_password}@{self.oltp_address}/{self.oltp_db}'
+    def postgres_uri(self):
+        return f'postgresql+psycopg://{self.pg_username}:{self.pg_password}@{self.pg_address}/{self.pg_db}'
 
     @property
-    def olap_uri(self):
-        return f'clickhouse://{self.olap_username}:{self.olap_password}@{self.olap_address}/{self.olap_db}'
+    def clickhouse_uri(self):
+        return f'clickhouse://{self.ch_username}:{self.ch_password}@{self.ch_address}/{self.ch_db}'
 
     @property
     def kafka_producer_config(self):

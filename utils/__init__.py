@@ -11,11 +11,11 @@ import sys
 from loguru import logger
 
 from .classes import CONFIG
+from .classes import ClickhouseManager
 from .classes import DatabaseManager
 from .classes import JSONExtensionEncoder
 from .classes import KafkaManager
-from .classes import OLAPManager
-from .classes import OLTPManager
+from .classes import PostgresManager
 from .classes import RedisManager
 from .classes import Singleton
 from .constants import Constants

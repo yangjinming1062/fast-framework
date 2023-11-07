@@ -63,7 +63,7 @@ def get_router(path, name, skip_auth=False):
         return APIRouter(prefix=url_prefix, tags=[name], dependencies=[Depends(get_user)])
 
 
-def orm_create(instance, error_msg='无效输入') -> str:
+def create_instance(instance, error_msg='无效输入') -> str:
     """
     新增数据实例。
 
@@ -85,7 +85,7 @@ def orm_create(instance, error_msg='无效输入') -> str:
         raise HTTPException(422, error_msg)
 
 
-def orm_update(cls, instance_id, params, error_msg='无效输入'):
+def update_instance(cls, instance_id, params, error_msg='无效输入'):
     """
     更新ORM数据。
 
@@ -152,8 +152,7 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     # 计算总行数
     if not with_total:
         # 如果查询的列中不包含总数则先查总数再附加分页及排序条件
-        total_sql = select(func.count()).select_from(sql)
-        total, _ = execute_sql(total_sql, fetchall=False, scalar=True, session=session)
+        total, _ = execute_sql(select(func.count()).select_from(sql), fetchall=False, scalar=True, session=session)
     else:
         # 最后一列是总数时跳过查询总数
         total = 0
@@ -179,16 +178,13 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     data, _ = execute_sql(sql, fetchall=True, scalar=False, session=session)
     # 应用format_func（如果提供）
     if format_func:
-        data = list(map(format_func, data))
+        data = [format_func(x) for x in data]
     # 如果最后一列是总计数，则更新总计数
     if with_total and data:
         total = data[0][-1]
     result = schema(total=total, data=data)
     # 统一进行数据导出的处理
-    if paginate.export:
-        return download_file(result.data, schema.__doc__.strip())
-    else:
-        return result
+    return download_file(result.data, schema.__doc__.strip()) if paginate.export else result
 
 
 def add_filter(sql, column, value, op_type):
@@ -198,8 +194,8 @@ def add_filter(sql, column, value, op_type):
     Args:
         sql (Select): SQLAlchemy SQL语句对象。
         column (Column): 要查询的列。
-        value: 查询参数。
-        op_type: 操作类型。
+        value (Any): 查询参数。
+        op_type (str): 操作类型。
 
     Returns:
         添加了where条件的SQL对象。
@@ -259,7 +255,7 @@ def download_file(data, file_name):
             yield csv_data.getvalue()
 
     if not data:
-        raise HTTPException(404, '所选范围无数据，下载失败')
+        raise HTTPException(400, '所选范围无数据，下载失败')
 
     file_name = f'{file_name}_{datetime.now().strftime(Constants.DEFINE_DATE_FORMAT)}.csv'
     headers = {

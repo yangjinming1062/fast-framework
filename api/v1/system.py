@@ -42,7 +42,7 @@ def post_user(
     user.password = generate_key(password)
     user.phone = phone
     user.email = email
-    return orm_create(user, '用户名已存在')
+    return create_instance(user, '用户名已存在')
 
 
 @router.patch('/users/{user_id}', status_code=204, summary='编辑用户')
@@ -59,7 +59,7 @@ def patch_user(
         'phone': phone,
         'email': email,
     }
-    return orm_update(User, user_id, params, '用户名已存在')
+    return update_instance(User, user_id, params, '用户名已存在')
 
 
 @router.delete('/users', status_code=204, summary='删除用户')

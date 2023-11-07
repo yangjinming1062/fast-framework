@@ -30,7 +30,7 @@ class PaginateRequest(BaseModel):
     分页类请求共同参数定义
     """
     page: int | None = Field(None, ge=0)
-    size: int | None = Field(None, gt=0, lt=100)
+    size: int | None = Field(None, gt=0, le=100)
     sort: list[str] | None = None
     export: bool = Field(False, title='是否导出数据')
     data: list[str] | None = Field(None, title='按ID导出时的ID列表')

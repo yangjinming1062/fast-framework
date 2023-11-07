@@ -8,7 +8,7 @@ Description : 程序的入口位置，通过该文件启动app程序
 import uvicorn
 from fastapi import FastAPI
 
-from apis import ROUTERS
+from api import ROUTERS
 from utils import *
 
 

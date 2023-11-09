@@ -11,16 +11,15 @@ import sys
 from loguru import logger
 
 from .classes import CONFIG
-from .classes import ClickhouseManager
+from .classes import DB_ENGINE_CH
+from .classes import DB_ENGINE_PG
 from .classes import DatabaseManager
 from .classes import JSONExtensionEncoder
 from .classes import KafkaManager
-from .classes import PostgresManager
 from .classes import RedisManager
 from .classes import Singleton
 from .constants import Constants
 from .functions import exceptions
-from .functions import execute_sql
 from .functions import generate_key
 
 if CONFIG.log_dir:

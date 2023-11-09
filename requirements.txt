@@ -1,7 +1,7 @@
 # Framework
-fastapi>=0.103.0,<0.104.0
-uvicorn==0.23.2
-pydantic==2.3.0
+fastapi>=0.104.0,<0.105.0
+uvicorn==0.24.0
+pydantic==2.4.2
 ## .env
 pydantic-settings==2.0.3
 python-dotenv==1.0.0
@@ -10,12 +10,12 @@ python-jose==3.3.0
 # Secret
 cryptography==41.0.4
 # DB
-alembic==1.12.0
-SQLAlchemy==2.0.20
-psycopg[binary]==3.1.10
-clickhouse-driver==0.2.6
+alembic==1.12.1
+SQLAlchemy==2.0.23
+psycopg[binary]==3.1.12
+clickhouse-sqlalchemy==0.3.0
 redis==5.0.0
-confluent-kafka==2.2.0
+confluent-kafka==2.3.0
 # Other
 requests==2.31.0
 docopt==0.6.2

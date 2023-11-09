@@ -12,7 +12,6 @@ from enum import Enum
 from ipaddress import IPv4Address
 from ipaddress import IPv6Address
 
-from clickhouse_driver import Client
 from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from redis import ConnectionPool
@@ -23,11 +22,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
 
-from defines import CONFIG
+from config import Configuration
 from utils import logger
 from .constants import Constants
 
-PG_ENGINE = create_engine(CONFIG.postgres_uri, pool_size=150, pool_recycle=60)
+CONFIG = Configuration()
+
+DB_ENGINE_CH = create_engine(CONFIG.clickhouse_uri, pool_size=150, pool_recycle=60)
+DB_ENGINE_PG = create_engine(CONFIG.postgres_uri, pool_size=150, pool_recycle=60)
 
 
 class Singleton(type):
@@ -226,19 +228,21 @@ class DatabaseManager:
     数据库管理: 优先使用OLAPManager或OLTPManager子类，避免直接调用该类
     """
     __slots__ = ('session', 'type', 'autocommit')
+    session: Session
 
-    def __init__(self, session=None, session_type=None, autocommit=True):
+    def __init__(self, db_engine, session=None):
+        """
+
+        Args:
+            db_engine (Engine): DB_ENGINE_PG 或 DB_ENGINE_CH。
+            session (Session | None): 默认None，如果传递了非None的数据库链接则复用该链接
+        """
         if session is None:
-            self.autocommit = autocommit
-            self.type = session_type
-            if session_type is PostgresManager:
-                self.session = Session(PG_ENGINE)
-            elif session_type is ClickhouseManager:
-                self.session = Client.from_url(CONFIG.clickhouse_uri)
+            self.autocommit = True
+            self.session = Session(db_engine)
         else:
             self.autocommit = False
             self.session = session
-            self.type = self.get_session_type(session)
 
     def __enter__(self):
         """
@@ -259,75 +263,13 @@ class DatabaseManager:
             traceback (traceback): The traceback object that contains information about the exception, if any.
         """
         if exc_value:
-            if self.type is PostgresManager:
-                self.session.rollback()
+            self.session.rollback()
         self.close()
 
     def close(self):
-        if self.type is PostgresManager:
-            if self.autocommit:
-                self.session.commit()
-            self.session.close()
-        elif self.type is ClickhouseManager:
-            self.session.disconnect()
-
-    @staticmethod
-    def get_session_type(session):
-        """
-        获取session对象的数据库类型
-        Args:
-            session (Session | Client):数据库连接
-
-        Returns:
-            ClickhouseManager | PostgresManager: 数据连接类型
-        """
-        return ClickhouseManager if isinstance(session, Client) else PostgresManager
-
-
-class ClickhouseManager(DatabaseManager):
-    """
-    OLAP数据库管理
-    """
-    session: Client
-
-    def __init__(self):
-        super().__init__(session_type=ClickhouseManager)
-
-    def __enter__(self):
-        """
-        with的进入方法，返回当前的session。
-        """
-        return self.session
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """
-        当离开上下文时关闭数据库连接。
-        """
-        self.close()
-
-
-class PostgresManager(DatabaseManager):
-    """
-    OLTP数据库管理
-    """
-    session: Session
-
-    def __init__(self, autocommit=True):
-        super().__init__(session_type=PostgresManager, autocommit=autocommit)
-
-    def __enter__(self):
-        """
-        with的进入方法，返回当前的session。
-        """
-        return self.session
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """
-        当离开上下文时关闭数据库连接。
-        """
-        if exc_value:
-            self.session.rollback()
-        self.close()
+        if self.autocommit:
+            self.session.commit()
+        self.session.close()
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

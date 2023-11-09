@@ -28,16 +28,19 @@ from utils import *
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 ALGORITHM = 'HS256'
 
+_CH_TABLES = {item.__tablename__ for item in ClickhouseModelsDict.values()}
+
 
 async def get_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
         if uid := payload.get('uid'):
-            user, _ = execute_sql(select(User).where(User.id == uid), fetchall=False)
-            if user:
-                return user
-            else:
-                raise HTTPException(404)
+            with DatabaseManager(DB_ENGINE_PG) as db:
+                if user := db.get(User, uid):
+                    db.expunge(user)
+                    return user
+                else:
+                    raise HTTPException(404)
         else:
             raise HTTPException(401, '无效的认证信息')
     except JWTError:
@@ -76,7 +79,7 @@ def create_instance(instance, error_msg='无效输入') -> str:
     """
     instance.updated_at = datetime.now()
     try:
-        with PostgresManager() as db:
+        with DatabaseManager(DB_ENGINE_PG) as db:
             db.add(instance)
             db.flush()
             return instance.id
@@ -99,7 +102,7 @@ def update_instance(cls, instance_id, params, error_msg='无效输入'):
         None
     """
     params['updated_at'] = datetime.now()
-    with PostgresManager() as db:
+    with DatabaseManager(DB_ENGINE_PG) as db:
         if item := db.get(cls, instance_id):
             try:
                 for key, value in params.items():
@@ -126,7 +129,7 @@ def orm_delete(cls, data):
     """
 
     try:
-        with PostgresManager() as db:
+        with DatabaseManager(DB_ENGINE_PG) as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)
@@ -145,48 +148,50 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
         paginate (PaginateRequest): 分页参数。
         schema (Type[PaginateResponse]): 接口响应数据定义。
         format_func: 用于格式化查询结果的函数， 默认None则不进行额外操作。
-        session: 无法自动判断查询数据库时需要指定的查询连接。
+        session (Session | None): 默认None时根据查询对象自动判断，无法自动判断查询数据库时需要指定的查询连接。
         with_total (bool): 查询结果中的最后一列是否为总数, 默认为False。
 
     Returns:
         包含总计数和查询结果数据的词典。
     """
+    engine = DB_ENGINE_CH if sql.froms[0].name in _CH_TABLES else DB_ENGINE_PG
     # 计算总行数
-    if not with_total:
-        # 如果查询的列中不包含总数则先查总数再附加分页及排序条件
-        total, _ = execute_sql(select(func.count()).select_from(sql), fetchall=False, scalar=True, session=session)
-    else:
-        # 最后一列是总数时跳过查询总数
-        total = 0
-    # 将分页参数应用于查询
-    if paginate.size is not None:
-        sql = sql.limit(paginate.size)
-    if paginate.page is not None:
-        sql = sql.offset(paginate.page * paginate.size)
-    # 导出数据时可以提供待导出数据的ID进行过滤
-    if paginate.export and paginate.keys:
-        sql = sql.where(Column('id').in_(paginate.keys))
-    # 对查询结果进行排序
-    for column_name in paginate.sort or []:
-        if column_name == '':
-            continue
-        if column_name[0] in ('+', '-'):
-            direct = 'DESC' if column_name[0] == '-' else 'ASC'
-            column_name = column_name[1:]
+    with DatabaseManager(engine, session=session) as db:
+        if not with_total:
+            # 如果查询的列中不包含总数则先查总数再附加分页及排序条件
+            total = db.scalar(select(func.count()).select_from(sql))
         else:
-            direct = 'ASC'
-        sql = sql.order_by(text(f'{column_name} {direct}'))
-    # 执行查询
-    data, _ = execute_sql(sql, fetchall=True, scalar=False, session=session)
-    # 应用format_func（如果提供）
-    if format_func:
-        data = [format_func(x) for x in data]
-    # 如果最后一列是总计数，则更新总计数
-    if with_total and data:
-        total = data[0][-1]
-    result = schema(total=total, data=data)
-    # 统一进行数据导出的处理
-    return download_file(result.data, schema.__doc__.strip()) if paginate.export else result
+            # 最后一列是总数时跳过查询总数
+            total = 0
+        # 将分页参数应用于查询
+        if paginate.size is not None:
+            sql = sql.limit(paginate.size)
+        if paginate.page is not None:
+            sql = sql.offset(paginate.page * paginate.size)
+        # 导出数据时可以提供待导出数据的ID进行过滤
+        if paginate.export and paginate.keys:
+            sql = sql.where(Column('id').in_(paginate.keys))
+        # 对查询结果进行排序
+        for column_name in paginate.sort or []:
+            if column_name == '':
+                continue
+            if column_name[0] in ('+', '-'):
+                direct = 'DESC' if column_name[0] == '-' else 'ASC'
+                column_name = column_name[1:]
+            else:
+                direct = 'ASC'
+            sql = sql.order_by(text(f'{column_name} {direct}'))
+        # 执行查询
+        data = db.execute(sql).fetchall()
+        # 应用format_func（如果提供）
+        if format_func:
+            data = [format_func(x) for x in data]
+        # 如果最后一列是总计数，则更新总计数
+        if with_total and data:
+            total = data[0][-1]
+        result = schema(total=total, data=data)
+        # 统一进行数据导出的处理
+        return download_file(result.data, schema.__doc__.strip()) if paginate.export else result
 
 
 def _add_filter(column, value, op_type):

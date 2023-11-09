@@ -27,7 +27,7 @@ def init_user(account, username, password):
     Returns:
         None
     """
-    with PostgresManager() as db:
+    with DatabaseManager(DB_ENGINE_PG) as db:
         uid = generate_key(account)  # 保证多环境管理员的id一致
         user = db.get(User, uid) or User()
         user.id = uid

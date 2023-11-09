@@ -28,7 +28,7 @@ class Configuration(BaseSettings):
     pg_password: str = Field(alias='POSTGRESQL_PASSWORD')
     pg_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
-    ch_address: str = f'{host}:9000'
+    ch_address: str = f'{host}'
     ch_username: str = Field(alias='CLICKHOUSE_ADMIN_USER')
     ch_password: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
     ch_db: str = Field(alias='CLICKHOUSE_DATABASE')

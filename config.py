@@ -57,7 +57,7 @@ class Configuration(BaseSettings):
 
     @property
     def clickhouse_uri(self):
-        return f'clickhouse://{self.ch_username}:{self.ch_password}@{self.ch_address}/{self.ch_db}'
+        return f'clickhouse+native://{self.ch_username}:{self.ch_password}@{self.ch_address}/{self.ch_db}'
 
     @property
     def kafka_producer_config(self):

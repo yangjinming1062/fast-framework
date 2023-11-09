@@ -25,7 +25,7 @@ class LoginResponse(BaseModel):
     """
     username: str = Field(title='用户名')
     role: RoleEnum = Field(title='角色')
-    token_type: str = Field(title='token类型')
+    token_type: str = Field('bearer', title='token类型')
     access_token: str = Field(title='访问令牌')
 
 

@@ -12,6 +12,7 @@ from ipaddress import ip_network
 from cryptography.fernet import Fernet
 from sqlalchemy import Column
 from sqlalchemy import String
+from sqlalchemy import and_
 from sqlalchemy import func
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -57,9 +58,10 @@ class ModelBase:
         Returns:
             str: 加密的结果。
         """
-        if isinstance(data, str):
-            data = data.encode()
-        return SECRET.encrypt(data).decode('utf-8')
+        if data:
+            if isinstance(data, str):
+                data = data.encode()
+            return SECRET.encrypt(data).decode('utf-8')
 
     @staticmethod
     def decrypt(data):
@@ -72,7 +74,8 @@ class ModelBase:
         Returns:
             str: 解码后的字符串。
         """
-        return SECRET.decrypt(data).decode('utf-8')
+        if data:
+            return SECRET.decrypt(data).decode('utf-8')
 
 
 class PostgresModelBase(DeclarativeBase, ModelBase):
@@ -91,28 +94,24 @@ class ClickhouseModelBase(DeclarativeBase, ModelBase):
     __abstract__ = True
 
     @classmethod
-    def add_ip_filter(cls, sql, column, value):
+    def ip_filter(cls, column, value):
         """
         添加IP类型列的查询条件。
 
         Args:
-            sql: SQL对象。
             column (Column): 需要查询的列。
             value (str): 需要查询的IP。
 
         Returns:
-            添加了搜索条件的SQL对象。
+            ColumnElement[bool]: 搜索条件。
         """
         if '*' in value:
-            return sql.where(func.IPv4NumToString(column).like(value.replace('*', '%')))
+            return func.IPv4NumToString(column).like(value.replace('*', '%'))
         elif '/' in value:
             ip_net = ip_network(value, strict=False)
-            return sql.where(
-                column >= ip_net.network_address,
-                column <= ip_net.broadcast_address,
-            )
+            return and_(column >= ip_net.network_address, column <= ip_net.broadcast_address)
         else:
-            return sql.where(func.IPv4NumToString(column) == value)
+            return func.IPv4NumToString(column) == value
 
 
 class TimeColumns:

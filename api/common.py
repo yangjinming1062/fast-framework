@@ -124,6 +124,7 @@ def orm_delete(cls, data):
     Returns:
         None
     """
+
     try:
         with PostgresManager() as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
@@ -137,6 +138,7 @@ def orm_delete(cls, data):
 def paginate_query(sql, paginate, schema, format_func=None, session=None, with_total=False):
     """
     分页查询结果。
+    PS：因为paginate_query中执行数据查询的时候scalar被固定为False，因此不能直接select(cls)
 
     Args:
         sql (Select): SQL查询。
@@ -162,8 +164,8 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     if paginate.page is not None:
         sql = sql.offset(paginate.page * paginate.size)
     # 导出数据时可以提供待导出数据的ID进行过滤
-    if paginate.export and paginate.data:
-        sql = add_filter(sql, Column('id'), paginate.data, 'in')
+    if paginate.export and paginate.keys:
+        sql = sql.where(Column('id').in_(paginate.keys))
     # 对查询结果进行排序
     for column_name in paginate.sort or []:
         if column_name == '':
@@ -187,48 +189,65 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     return download_file(result.data, schema.__doc__.strip()) if paginate.export else result
 
 
-def add_filter(sql, column, value, op_type):
+def _add_filter(column, value, op_type):
     """
     向SQL对象添加查询条件。
 
     Args:
-        sql (Select): SQLAlchemy SQL语句对象。
         column (Column): 要查询的列。
         value (Any): 查询参数。
         op_type (str): 操作类型。
 
     Returns:
-        添加了where条件的SQL对象。
+        ColumnElement | None
     """
+
     if value is not None:
         if op_type == 'like':
             if isinstance(value, list):
                 # like也可以用于列表：以或的关系
-                return sql.where(or_(*[column.like(f'%{x}%') for x in value]))
+                return or_(*[column.like(f'%{x}%') for x in value])
             else:
                 # 使用like运算符
-                return sql.where(column.like(f'%{value}%'))
+                return column.like(f'%{value}%')
         elif op_type == 'in':
             # in运算符
-            return sql.where(column.in_(value))
+            return column.in_(value)
         elif op_type == 'notin':
             # notin运算符
-            return sql.where(column.notin_(value))
+            return column.notin_(value)
         elif op_type == 'datetime':
             # 添加时间过滤参数：这个地方可以根据情况调整
             assert isinstance(value, DateFilterSchema), 'value must be a DateFilterSchema'
-            return sql.where(column.between(value.started_at, value.ended_at))
+            return column.between(value.started_at, value.ended_at)
         elif op_type == 'json':
             # 列类型是json时添加检索条件，这里直接将json变成text属于一种偷懒做法，具体取决用的数据库类型
-            return sql.where(func.text(column).like(f'%{value}%'))
+            return func.text(column).like(f'%{value}%')
         elif op_type == 'ip':
             # Clickhouse添加IP列的过滤条件
-            return ClickhouseModelBase.add_ip_filter(sql, column, value)
+            return ClickhouseModelBase.ip_filter(column, value)
         else:
             # 其他类似于==,>,<等这种运算符直接添加
-            return sql.where(eval(f'column {op_type} value'))
-    else:
-        return sql
+            return eval(f'column {op_type} value')
+
+
+def add_filter(sql, query, columns):
+    """
+    向SQL对象添加查询条件。
+
+    Args:
+        sql (Select): SQLAlchemy SQL语句对象。
+        query (dict): 过滤参数
+        columns (dict[Column, str]): 要查询的列。
+
+    Returns:
+        添加了where条件的SQL对象。
+    """
+    args = []
+    for column, op_type in columns.items():
+        if (arg := _add_filter(column, query.get(column.key), op_type)) is not None:
+            args.append(arg)
+    return sql.where(*args) if args else sql
 
 
 def download_file(data, file_name):

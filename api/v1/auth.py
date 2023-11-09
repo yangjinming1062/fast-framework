@@ -15,13 +15,12 @@ def _create_token(identity):
 
 @router.post('/login')
 async def login(data: LoginRequest = Body()) -> LoginResponse:
-    user, _ = execute_sql(select(User).where(User.account == data.account), fetchall=False)
-    if user:
-        if generate_key(data.password) == user.password:
-            return LoginResponse(**{
-                'username': user.username,
-                'role': user.role,
-                'token_type': 'bearer',
-                'access_token': _create_token(identity=user.id),
-            })
-    raise HTTPException(403, '用户名或密码错误', headers={'WWW-Authenticate': 'Bearer'})
+    with PostgresManager() as db:
+        if user := db.scalar(select(User).where(User.account == data.account)):
+            if generate_key(data.password) == user.password:
+                return LoginResponse(
+                    username=user.username,
+                    role=user.role,
+                    access_token=_create_token(identity=user.id),
+                )
+        raise HTTPException(403, '用户名或密码错误', headers={'WWW-Authenticate': 'Bearer'})

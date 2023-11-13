@@ -5,6 +5,7 @@ Author      : jinming.yang
 Description : 基础方法的定义实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
+import base64
 import uuid
 from functools import wraps
 
@@ -53,3 +54,27 @@ def generate_key(*args, need_uuid=False):
     else:
         tmp = uuid.uuid4()
     return tmp if need_uuid else tmp.hex[-12:]
+
+
+def base64_to_str(value):
+    """
+    bytes转成str
+    Args:
+        value (bytes):
+
+    Returns:
+        str
+    """
+    return base64.b64encode(value).decode()
+
+
+def str_to_base64(value):
+    """
+    str转成bytes
+    Args:
+        value (str):
+
+    Returns:
+        bytes
+    """
+    return base64.b64decode(value.encode())

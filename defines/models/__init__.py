@@ -5,14 +5,12 @@ Author      : jinming.yang
 Description : 在__init__.py中统一导入
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
-from .base import CONFIG
 from .base import ClickhouseModelBase
 from .base import ModelBase
 from .base import PostgresModelBase
 from .system import User
 
 _base = [
-    'CONFIG',
     'ModelBase',
     'ClickhouseModelBase',
     'ClickhouseModelsDict',

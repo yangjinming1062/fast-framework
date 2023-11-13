@@ -14,22 +14,25 @@ from ipaddress import IPv6Address
 
 from confluent_kafka import Consumer
 from confluent_kafka import Producer
+from confluent_kafka import TopicPartition
 from redis import ConnectionPool
 from redis import Redis
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Row
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 
-from config import Configuration
+from config import CONFIG
 from utils import logger
 from .constants import Constants
 
-CONFIG = Configuration()
-
 DB_ENGINE_CH = create_engine(CONFIG.clickhouse_uri, pool_size=150, pool_recycle=60)
+DB_ENGINE_CH_ASYNC = create_async_engine(CONFIG.clickhouse_async_uri, pool_size=150, pool_recycle=60)
 DB_ENGINE_PG = create_engine(CONFIG.postgres_uri, pool_size=150, pool_recycle=60)
+DB_ENGINE_PG_ASYNC = create_async_engine(CONFIG.postgres_async_uri, pool_size=150, pool_recycle=60)
 
 
 class Singleton(type):
@@ -47,6 +50,58 @@ class RedisManager:
     """
     _async_clients = {}
     _clients = {}
+    REDIS_CONFIG = {
+        'host': CONFIG.redis_host,
+        'port': CONFIG.redis_port,
+        'password': CONFIG.redis_password,
+        'decode_responses': True,
+    }
+
+    class RedisClient(Redis):
+        """
+        封装对象操作的Redis客户端
+        """
+
+        def __init__(self, db):
+            super().__init__(connection_pool=ConnectionPool(db=db, **RedisManager.REDIS_CONFIG))
+
+        def delete_all(self):
+            for key in self.keys():
+                self.delete(key)
+
+        def get_object(self, key, default=None):
+            if value := self.get(key):
+                return json.loads(value)
+            else:
+                return default
+
+        def set_object(self, key, value, ex=None):
+            if not isinstance(value, str):
+                value = json.dumps(value)
+            self.set(key, value, ex)
+
+    class AsyncRedisClient(AsyncRedis):
+        """
+        封装对象操作的AsyncRedis客户端
+        """
+
+        def __init__(self, db):
+            super().__init__(connection_pool=AsyncConnectionPool(db=db, **RedisManager.REDIS_CONFIG))
+
+        async def delete_all(self):
+            async for key in self.keys():
+                await self.delete(key)
+
+        async def get_object(self, key, default=None):
+            if value := await self.get(key):
+                return json.loads(value)
+            else:
+                return default
+
+        async def set_object(self, key, value, ex=None):
+            if not isinstance(value, str):
+                value = json.dumps(value)
+            await self.set(key, value, ex)
 
     @staticmethod
     def get_client(db=0):
@@ -57,18 +112,12 @@ class RedisManager:
             db (int): redis的数据库序号，默认0。
 
         Returns:
-            Redis: client实例。
+            RedisManager.RedisClient: client实例。
         """
         # 每个数据库复用同一个Client，判断是否存在
         if db not in RedisManager._clients:
             # 添加一个指定db的client实例
-            redis_config = {
-                'host': CONFIG.redis_host,
-                'port': CONFIG.redis_port,
-                'password': CONFIG.redis_password,
-                'decode_responses': True,
-            }
-            RedisManager._clients[db] = Redis(connection_pool=ConnectionPool(db=db, **redis_config))
+            RedisManager._clients[db] = RedisManager.RedisClient(db)
 
         # 返回指定db的client实例
         return RedisManager._clients[db]
@@ -82,18 +131,12 @@ class RedisManager:
             db (int): redis的数据库序号，默认0。
 
         Returns:
-            AsyncRedis: client实例。
+            RedisManager.AsyncRedisClient: client实例。
         """
         # 每个数据库复用同一个Client，判断是否存在
         if db not in RedisManager._async_clients:
             # 添加一个指定db的client实例
-            redis_config = {
-                'host': CONFIG.redis_host,
-                'port': CONFIG.redis_port,
-                'password': CONFIG.redis_password,
-                'decode_responses': True,
-            }
-            RedisManager._async_clients[db] = AsyncRedis(connection_pool=AsyncConnectionPool(db=db, **redis_config))
+            RedisManager._async_clients[db] = RedisManager.AsyncRedisClient(db)
 
         # 返回指定db的client实例
         return RedisManager._async_clients[db]
@@ -103,20 +146,28 @@ class KafkaManager:
     """
     Kafka管理器，简化生成和消费的处理
     """
+
     PRODUCER = Producer(CONFIG.kafka_producer_config)
 
     @staticmethod
-    def get_consumer(*topic):
+    def get_consumer(*topic, group_name=None, partition=None):
         """
         创建一个消费者。
 
         Args:
             topic: 消费的主题都有哪些。
+            group_name (str): 组名称，默认None时使用CONFIG中的默认值。
+            partition (int): 指定监听的分区。
 
         Returns:
             Consumer: 消费者实例。
         """
-        consumer = Consumer(CONFIG.kafka_consumer_config)
+        config = CONFIG.kafka_consumer_config
+        if group_name:
+            config['group.id'] = group_name
+        consumer = Consumer(config)
+        if partition is not None:
+            consumer.assign([TopicPartition(t, partition) for t in topic])
         consumer.subscribe(list(topic))
         return consumer
 
@@ -148,7 +199,7 @@ class KafkaManager:
             need_load (bool, optional): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
 
         Returns:
-            list: 如果指定了“limit”，则返回JSON解码消息的列表。
+            list | dict: 如果指定了“limit”，则返回JSON解码消息的列表。
 
         Yields:
             dict | str: 如果“limit”为None，则以生成器的方式每次返回单个JSON解码消息。
@@ -225,10 +276,10 @@ class KafkaManager:
 
 class DatabaseManager:
     """
-    数据库管理: 优先使用OLAPManager或OLTPManager子类，避免直接调用该类
+    数据库管理: 统一实现Postgres和ClickHouse的连接创建、关闭、提交回滚等逻辑
     """
-    __slots__ = ('session', 'type', 'autocommit')
-    session: Session
+    __slots__ = ('session', 'autocommit')
+    session: Session | AsyncSession
 
     def __init__(self, db_engine, session=None):
         """
@@ -239,7 +290,10 @@ class DatabaseManager:
         """
         if session is None:
             self.autocommit = True
-            self.session = Session(db_engine)
+            if db_engine in (DB_ENGINE_PG, DB_ENGINE_CH):
+                self.session = Session(db_engine)
+            else:
+                self.session = AsyncSession(db_engine)
         else:
             self.autocommit = False
             self.session = session
@@ -264,12 +318,33 @@ class DatabaseManager:
         """
         if exc_value:
             self.session.rollback()
-        self.close()
-
-    def close(self):
         if self.autocommit:
             self.session.commit()
         self.session.close()
+
+    async def __aenter__(self):
+        """
+        async with的进入方法，返回一个上下文对象。
+
+        Returns:
+            数据管理器
+        """
+        return self.session
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        """
+        当离开上下文时关闭数据库连接。
+
+        Args:
+            exc_type (type): The type of the exception that occurred, if any.
+            exc_value (Exception): The exception object that was raised, if any.
+            traceback (traceback): The traceback object that contains information about the exception, if any.
+        """
+        if exc_value:
+            await self.session.rollback()
+        if self.autocommit:
+            await self.session.commit()
+        await self.session.close()
 
 
 class JSONExtensionEncoder(json.JSONEncoder):

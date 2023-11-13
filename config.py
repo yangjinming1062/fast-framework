@@ -21,23 +21,23 @@ class Configuration(BaseSettings):
     log_format: str = '{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>'
     log_retention: str = '1 days'
     # 默认IP
-    host: str = '127.0.0.1'
+    host: str
     # OLTP数据库相关参数
-    pg_address: str = f'{host}:5432'
+    pg_address: str
     pg_username: str = Field(alias='POSTGRESQL_USERNAME')
     pg_password: str = Field(alias='POSTGRESQL_PASSWORD')
     pg_db: str = Field(alias='POSTGRESQL_DATABASE')
     # OLAP数据库相关参数
-    ch_address: str = f'{host}'
+    ch_address: str
     ch_username: str = Field(alias='CLICKHOUSE_ADMIN_USER')
     ch_password: str = Field(alias='CLICKHOUSE_ADMIN_PASSWORD')
     ch_db: str = Field(alias='CLICKHOUSE_DATABASE')
     # REDIS相关参数
-    redis_host: str = host
+    redis_host: str
     redis_port: int = 6379
     redis_password: str
     # KAFKA相关参数
-    kafka_address: str = f'{host}:9092'
+    kafka_address: str
     kafka_consumer_timeout: int = 10
     kafka_protocol: str = 'PLAINTEXT'
     kafka_message_max_bytes: int
@@ -56,8 +56,16 @@ class Configuration(BaseSettings):
         return f'postgresql+psycopg://{self.pg_username}:{self.pg_password}@{self.pg_address}/{self.pg_db}'
 
     @property
+    def postgres_async_uri(self):
+        return f'postgresql+asyncpg://{self.pg_username}:{self.pg_password}@{self.pg_address}/{self.pg_db}'
+
+    @property
     def clickhouse_uri(self):
         return f'clickhouse+native://{self.ch_username}:{self.ch_password}@{self.ch_address}/{self.ch_db}'
+
+    @property
+    def clickhouse_async_uri(self):
+        return f'clickhouse+asynch://{self.ch_username}:{self.ch_password}@{self.ch_address}/{self.ch_db}'
 
     @property
     def kafka_producer_config(self):
@@ -75,3 +83,6 @@ class Configuration(BaseSettings):
             'group.id': self.kafka_group,
             'bootstrap.servers': self.kafka_address,
         }
+
+
+CONFIG = Configuration()

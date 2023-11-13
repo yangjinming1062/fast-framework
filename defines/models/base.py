@@ -20,9 +20,8 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.properties import ColumnProperty
 from typing_extensions import Annotated
 
-from config import Configuration
+from config import CONFIG
 
-CONFIG = Configuration()
 SECRET = Fernet(CONFIG.secret_key)
 
 str_id = Annotated[str, mapped_column(String(16), index=True)]

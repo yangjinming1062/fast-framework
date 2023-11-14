@@ -35,7 +35,7 @@ async def get_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
         if uid := payload.get('uid'):
-            with DatabaseManager(DB_ENGINE_PG) as db:
+            with DatabaseManager(DatabaseTypeEnum.PG) as db:
                 if user := db.get(User, uid):
                     db.expunge(user)
                     return user
@@ -79,7 +79,7 @@ def create_instance(instance, error_msg='无效输入') -> str:
     """
     instance.updated_at = datetime.now()
     try:
-        with DatabaseManager(DB_ENGINE_PG) as db:
+        with DatabaseManager(DatabaseTypeEnum.PG) as db:
             db.add(instance)
             db.flush()
             return instance.id
@@ -102,7 +102,7 @@ def update_instance(cls, instance_id, params, error_msg='无效输入'):
         None
     """
     params['updated_at'] = datetime.now()
-    with DatabaseManager(DB_ENGINE_PG) as db:
+    with DatabaseManager(DatabaseTypeEnum.PG) as db:
         if item := db.get(cls, instance_id):
             try:
                 for key, value in params.items():
@@ -129,7 +129,7 @@ def orm_delete(cls, data):
     """
 
     try:
-        with DatabaseManager(DB_ENGINE_PG) as db:
+        with DatabaseManager(DatabaseTypeEnum.PG) as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)
@@ -154,7 +154,7 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     Returns:
         包含总计数和查询结果数据的词典。
     """
-    engine = DB_ENGINE_CH if sql.froms[0].name in _CH_TABLES else DB_ENGINE_PG
+    engine = DatabaseTypeEnum.CH if sql.froms[0].name in _CH_TABLES else DatabaseTypeEnum.PG
     # 计算总行数
     with DatabaseManager(engine, session=session) as db:
         if not with_total:

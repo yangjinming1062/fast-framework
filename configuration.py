@@ -1,8 +1,8 @@
 """
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : config.py
+File Name   : configuration.py
 Author      : jinming.yang
-Description : 数据库连接信息等参数配置
+Description : 常量、环境变量，各种参数配置
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
 from pydantic import Field
@@ -10,7 +10,14 @@ from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 
 
-class Configuration(BaseSettings):
+class CONSTANTS:
+    """
+    常量定义：常量类型_常量名称
+    """
+    FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
+
+
+class Config(BaseSettings):
     model_config = SettingsConfigDict(env_file=('.env', 'dev.env'), env_file_encoding='utf-8', extra='ignore')
     # 日志记录
     log_dir: str = ''
@@ -20,8 +27,10 @@ class Configuration(BaseSettings):
     log_stdout: bool = True
     log_format: str = '{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>'
     log_retention: str = '1 days'
-    # 默认IP
-    host: str
+    # DB连接参数
+    db_pool_size: int = 150
+    db_pool_recycle: int = 60
+    db_echo: bool = False
     # OLTP数据库相关参数
     pg_address: str
     pg_username: str = Field(alias='POSTGRESQL_USERNAME')
@@ -85,4 +94,6 @@ class Configuration(BaseSettings):
         }
 
 
-CONFIG = Configuration()
+CONFIG = Config()
+
+__all__ = ['CONFIG', 'CONSTANTS']

@@ -64,5 +64,5 @@ def patch_user(
 
 @router.delete('/users', status_code=204, summary='删除用户')
 def delete_user(params: list[str] = Query()):
-    with DatabaseManager(DatabaseTypeEnum.PG) as db:
+    with DatabaseManager(SessionTypeEnum.PG) as db:
         db.execute(update(User).where(User.id.in_(params), User.role != RoleEnum.Admin).values(valid=False))

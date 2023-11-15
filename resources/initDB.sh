@@ -4,7 +4,7 @@ migrate() {
   echo "开始执行数据库迁移..."
   if [ ! -d "./migrations" ]; then
     alembic init ./migrations
-    mv ./data/migration/env.py ./migrations/env.py
+    mv ./resources/migration/env.py ./migrations/env.py
   fi
   sleep 1
   alembic revision --autogenerate

@@ -15,11 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.mirrors.ustc.
 COPY main.py .
 ### 环境变量配置读取
 COPY .env .
-COPY config.py .
+COPY configuration.py .
 ### 数据库迁移
-COPY initDB.sh .
+COPY resources/initDB.sh initDB.sh
 ### 基础数据目录
-COPY data data
+COPY resources resources
 ### 基础工具方法/类的目录
 COPY utils utils
 ## 可能经常变动的内容

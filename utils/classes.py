@@ -14,7 +14,7 @@ from ipaddress import IPv6Address
 
 from sqlalchemy.engine import Row
 
-from .constants import Constants
+from configuration import CONSTANTS
 
 
 class Singleton(type):
@@ -35,7 +35,7 @@ class JSONExtensionEncoder(json.JSONEncoder):
         if isinstance(obj, Enum):
             return obj.name
         if isinstance(obj, datetime):
-            return obj.strftime(Constants.DEFINE_DATE_FORMAT)
+            return obj.strftime(CONSTANTS.FORMAT_DATE)
         if isinstance(obj, Row):
             return dict(obj._mapping)
         if isinstance(obj, (IPv4Address, IPv6Address)):

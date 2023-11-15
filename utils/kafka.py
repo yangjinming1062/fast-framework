@@ -11,7 +11,7 @@ from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
-from config import CONFIG
+from configuration import CONFIG
 from utils import logger
 from .classes import JSONExtensionEncoder
 
@@ -81,6 +81,18 @@ class KafkaManager:
         Raises:
             ValueError: 当kafka发生错误时抛出异常。
         """
+
+        def load(item):
+            bytes_message = item.value()
+            try:
+                str_message = bytes_message.decode('utf-8', 'strict')
+            except UnicodeDecodeError:
+                str_message = bytes_message.decode('utf-8', 'replace')
+            try:
+                return json.loads(str_message)
+            except Exception:
+                logger.error(f'Kafka消费失败，无法解析消息：{str_message}')
+
         if flag := consumer is None:
             consumer = KafkaManager.get_consumer(*topic)
         try:
@@ -93,19 +105,7 @@ class KafkaManager:
                 partition_id = msgs[0].partition()
                 topic = msgs[0].topic()
                 logger.info(f'{topic=}:{partition_id=}, {offset=}')
-                result = []
-                for item in msgs:
-                    if item:
-                        bytes_message = item.value()
-                        try:
-                            str_message = bytes_message.decode('utf-8', 'strict')
-                        except UnicodeDecodeError:
-                            str_message = bytes_message.decode('utf-8', 'replace')
-                        try:
-                            result.append(json.loads(str_message) if need_load else str_message)
-                        except Exception:
-                            logger.error(f'Kafka消费失败，无法解析消息：{str_message}')
-                return result
+                return [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
             else:
                 # 持续轮询，返回收到的第一条非空消息
                 while True:
@@ -114,14 +114,7 @@ class KafkaManager:
                         continue
                     if msg.error():
                         raise ValueError(msg.error())
-                    try:
-                        str_message = msg.value().decode('utf-8', 'strict')
-                    except UnicodeDecodeError:
-                        str_message = msg.value().decode('utf-8', 'replace')
-                    try:
-                        yield json.loads(str_message) if need_load else str_message
-                    except Exception:
-                        logger.error(f'Kafka消费失败，无法解析消息：{str_message}')
+                    yield load(msg) if need_load else msg.value()
         finally:
             # 不是函数内创建的消费者不进行取消订阅以及关闭操作
             if flag:

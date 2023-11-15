@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class DatabaseTypeEnum(Enum):
+class SessionTypeEnum(Enum):
     """
     数据库类型
     """

@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from configuration import CONSTANTS
 from defines import *
 from utils import *
 
@@ -35,7 +36,7 @@ async def get_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
         if uid := payload.get('uid'):
-            with DatabaseManager(DatabaseTypeEnum.PG) as db:
+            with DatabaseManager(SessionTypeEnum.PG) as db:
                 if user := db.get(User, uid):
                     db.expunge(user)
                     return user
@@ -79,7 +80,7 @@ def create_instance(instance, error_msg='无效输入') -> str:
     """
     instance.updated_at = datetime.now()
     try:
-        with DatabaseManager(DatabaseTypeEnum.PG) as db:
+        with DatabaseManager(SessionTypeEnum.PG) as db:
             db.add(instance)
             db.flush()
             return instance.id
@@ -102,7 +103,7 @@ def update_instance(cls, instance_id, params, error_msg='无效输入'):
         None
     """
     params['updated_at'] = datetime.now()
-    with DatabaseManager(DatabaseTypeEnum.PG) as db:
+    with DatabaseManager(SessionTypeEnum.PG) as db:
         if item := db.get(cls, instance_id):
             try:
                 for key, value in params.items():
@@ -129,7 +130,7 @@ def orm_delete(cls, data):
     """
 
     try:
-        with DatabaseManager(DatabaseTypeEnum.PG) as db:
+        with DatabaseManager(SessionTypeEnum.PG) as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)
@@ -154,7 +155,7 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     Returns:
         包含总计数和查询结果数据的词典。
     """
-    engine = DatabaseTypeEnum.CH if sql.froms[0].name in _CH_TABLES else DatabaseTypeEnum.PG
+    engine = SessionTypeEnum.CH if sql.froms[0].name in _CH_TABLES else SessionTypeEnum.PG
     # 计算总行数
     with DatabaseManager(engine, session=session) as db:
         if not with_total:
@@ -281,7 +282,7 @@ def download_file(data, file_name):
     if not data:
         raise HTTPException(400, '所选范围无数据，下载失败')
 
-    file_name = f'{file_name}_{datetime.now().strftime(Constants.DEFINE_DATE_FORMAT)}.csv'
+    file_name = f'{file_name}_{datetime.now().strftime(CONSTANTS.FORMAT_DATE)}.csv'
     headers = {
         'Content-Type': 'text/csv;charset=utf-8',
         'Content-Disposition': f'attachment; filename="{file_name}"',

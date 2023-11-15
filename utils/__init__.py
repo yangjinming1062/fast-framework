@@ -10,10 +10,9 @@ import sys
 
 from loguru import logger
 
-from config import CONFIG
+from configuration import CONFIG
 from .classes import JSONExtensionEncoder
 from .classes import Singleton
-from .constants import Constants
 from .database import DatabaseManager
 from .functions import base64_to_str
 from .functions import exceptions
@@ -21,6 +20,7 @@ from .functions import generate_key
 from .functions import str_to_base64
 from .kafka import KafkaManager
 from .redis import RedisManager
+from .secret import SecretManager
 
 if CONFIG.log_dir:
     # 日志记录

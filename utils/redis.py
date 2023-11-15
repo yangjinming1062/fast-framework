@@ -12,7 +12,7 @@ from redis import Redis
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
 
-from config import CONFIG
+from configuration import CONFIG
 
 
 class RedisManager:

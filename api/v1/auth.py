@@ -15,7 +15,7 @@ def _create_token(identity):
 
 @router.post('/login')
 async def login(data: LoginRequest = Body()) -> LoginResponse:
-    with DatabaseManager(DatabaseTypeEnum.PG) as db:
+    with DatabaseManager(SessionTypeEnum.PG) as db:
         if user := db.scalar(select(User).where(User.account == data.account)):
             if generate_key(data.password) == user.password:
                 return LoginResponse(

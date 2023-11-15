@@ -10,13 +10,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 
-from config import CONFIG
-from defines import DatabaseTypeEnum
+from configuration import CONFIG
+from defines import SessionTypeEnum
 
-DB_ENGINE_CH = create_engine(CONFIG.clickhouse_uri, pool_size=150, pool_recycle=60)
-DB_ENGINE_CH_ASYNC = create_async_engine(CONFIG.clickhouse_async_uri, pool_size=150, pool_recycle=60)
-DB_ENGINE_PG = create_engine(CONFIG.postgres_uri, pool_size=150, pool_recycle=60)
-DB_ENGINE_PG_ASYNC = create_async_engine(CONFIG.postgres_async_uri, pool_size=150, pool_recycle=60)
+_ENGINE_PARAMS = {
+    'pool_size': CONFIG.db_pool_size,
+    'pool_recycle': CONFIG.db_pool_recycle,
+    'echo': CONFIG.db_echo,
+}
+_CH = create_engine(CONFIG.clickhouse_uri, **_ENGINE_PARAMS)
+_CH_ASYNC = create_async_engine(CONFIG.clickhouse_async_uri, **_ENGINE_PARAMS)
+_PG = create_engine(CONFIG.postgres_uri, **_ENGINE_PARAMS)
+_PG_ASYNC = create_async_engine(CONFIG.postgres_async_uri, **_ENGINE_PARAMS)
 
 
 class DatabaseManager:
@@ -24,19 +29,19 @@ class DatabaseManager:
     数据库管理: 统一实现Postgres和ClickHouse的连接创建、关闭、提交回滚等逻辑
     """
     __slots__ = ('session', 'autocommit', 'type')
-    session: Session | AsyncSession
+    session: Session | AsyncSession | None
 
     def __init__(self, db_type, session=None):
         """
 
         Args:
-            db_type (DatabaseTypeEnum): 数据库类型
+            db_type (SessionTypeEnum): 数据库类型
             session (Session | None): 默认None，如果传递了非None的数据库链接则复用该链接
         """
         if session is None:
             self.autocommit = True
             self.type = db_type
-            # 延迟创建session，在进入上下文的时候根据是with还是async with选择不同的连接引擎
+            self.session = None  # 延迟创建session，在进入上下文的时候根据是with还是async with选择不同的连接引擎
         else:
             self.autocommit = False
             self.session = session
@@ -46,13 +51,13 @@ class DatabaseManager:
         with的进入方法，返回一个上下文对象。
 
         Returns:
-            数据管理器
+            Session: 数据库连接
         """
         if self.session is None:
-            if self.type == DatabaseTypeEnum.CH:
-                self.session = Session(DB_ENGINE_CH)
+            if self.type == SessionTypeEnum.CH:
+                self.session = Session(_CH)
             else:
-                self.session = Session(DB_ENGINE_PG)
+                self.session = Session(_PG)
         return self.session
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -75,13 +80,13 @@ class DatabaseManager:
         async with的进入方法，返回一个上下文对象。
 
         Returns:
-            数据管理器
+            AsyncSession: 数据库连接
         """
         if self.session is None:
-            if self.type == DatabaseTypeEnum.CH:
-                self.session = AsyncSession(DB_ENGINE_CH_ASYNC)
+            if self.type == SessionTypeEnum.CH:
+                self.session = AsyncSession(_CH_ASYNC)
             else:
-                self.session = AsyncSession(DB_ENGINE_PG_ASYNC)
+                self.session = AsyncSession(_PG_ASYNC)
         return self.session
 
     async def __aexit__(self, exc_type, exc_value, traceback):

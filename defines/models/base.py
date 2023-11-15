@@ -9,7 +9,6 @@ import uuid
 from datetime import datetime
 from ipaddress import ip_network
 
-from cryptography.fernet import Fernet
 from sqlalchemy import Column
 from sqlalchemy import String
 from sqlalchemy import and_
@@ -19,10 +18,6 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.properties import ColumnProperty
 from typing_extensions import Annotated
-
-from config import CONFIG
-
-SECRET = Fernet(CONFIG.secret_key)
 
 str_id = Annotated[str, mapped_column(String(16), index=True)]
 str_small = Annotated[str, mapped_column(String(32))]
@@ -45,36 +40,6 @@ class ModelBase:
             dict: key是列名称，value是列定义
         """
         return {p.key: p for p in cls.__mapper__.iterate_properties if isinstance(p, ColumnProperty)}
-
-    @staticmethod
-    def encrypt(data):
-        """
-        加密给定的数据并返回加密的结果。
-
-        Parameters:
-            data (str | bytes): 需要加密的数据。
-
-        Returns:
-            str: 加密的结果。
-        """
-        if data:
-            if isinstance(data, str):
-                data = data.encode()
-            return SECRET.encrypt(data).decode('utf-8')
-
-    @staticmethod
-    def decrypt(data):
-        """
-        解密给定数据并返回解码后的字符串。
-
-        Args:
-            data (bytes): 要解密的加密数据。
-
-        Returns:
-            str: 解码后的字符串。
-        """
-        if data:
-            return SECRET.decrypt(data).decode('utf-8')
 
 
 class PostgresModelBase(DeclarativeBase, ModelBase):

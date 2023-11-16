@@ -26,13 +26,16 @@ _PG_ASYNC = create_async_engine(CONFIG.postgres_async_uri, **_ENGINE_PARAMS)
 
 class DatabaseManager:
     """
-    数据库管理: 统一实现Postgres和ClickHouse的连接创建、关闭、提交回滚等逻辑
+    数据库连接管理器
+    PS: 统一实现Postgres和ClickHouse的连接创建、关闭、提交回滚等逻辑
     """
+
     __slots__ = ('session', 'autocommit', 'type')
     session: Session | AsyncSession | None
 
     def __init__(self, db_type, session=None):
         """
+        请使用with 或 async with的上下文语法创建数据库连接。
 
         Args:
             db_type (SessionTypeEnum): 数据库类型

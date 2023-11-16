@@ -13,11 +13,13 @@ from loguru import logger
 from configuration import CONFIG
 from .classes import JSONExtensionEncoder
 from .classes import Singleton
+from .classes import WithSemaphore
 from .database import DatabaseManager
-from .functions import base64_to_str
+from .functions import bytes_to_str
 from .functions import exceptions
 from .functions import generate_key
-from .functions import str_to_base64
+from .functions import str_to_bytes
+from .functions import time_function
 from .kafka import KafkaManager
 from .redis import RedisManager
 from .secret import SecretManager

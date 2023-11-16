@@ -8,26 +8,25 @@ ENV LANG=zh_CN.UTF-8
 WORKDIR /fast
 # 安装python库
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.mirrors.ustc.edu.cn/simple
+RUN pip install --no-cache-dir -r requirements.txt
 # 拷贝项目内容
-## 相对固定的内容
-### API服务启动文件
+## API服务启动文件
 COPY main.py .
-### 环境变量配置读取
+## 环境变量配置读取
 COPY .env .
 COPY configuration.py .
-### 数据库迁移
+## 基础数据
 COPY resources/initDB.sh initDB.sh
-### 基础数据目录
 COPY resources resources
-### 基础工具方法/类的目录
+## 工具方法、工具类
 COPY utils utils
-## 可能经常变动的内容
-### API接口
+## API接口
 COPY api api
-### 非接口命令文件
+## 业务逻辑
+# COPY business business
+## 非接口命令文件
 COPY command.py .
-### 数据模型定义
+## 数据模型定义
 COPY defines defines
 
 ### 对外暴露端口

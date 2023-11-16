@@ -13,12 +13,15 @@ from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
 
 from configuration import CONFIG
+from .classes import JSONExtensionEncoder
 
 
 class RedisManager:
     """
-    Redis管理器，使用get_client方法获取目标数据库的redis客户端
+    Redis管理器
+    PS: 使用get_client方法获取目标数据库的redis客户端
     """
+
     _async_clients = {}
     _clients = {}
     REDIS_CONFIG = {
@@ -36,19 +39,33 @@ class RedisManager:
         def __init__(self, db):
             super().__init__(connection_pool=ConnectionPool(db=db, **RedisManager.REDIS_CONFIG))
 
-        def delete_all(self):
-            for key in self.keys():
-                self.delete(key)
-
         def get_object(self, key, default=None):
+            """
+            使用给定的键从缓存中检索对象。
+
+            Args:
+                key (str): 储值的键。
+                default (Any, optional): 没查到数据时返回的值，默认None。
+
+            Returns:
+                list | dict | Any: json.loads后的对象或default
+            """
             if value := self.get(key):
                 return json.loads(value)
             else:
                 return default
 
         def set_object(self, key, value, ex=None):
+            """
+            使用指定的键在缓存中设置一个值。
+
+            Args:
+                key (str): 储值的键。
+                value (dict | list): 可json.dumps的数据。
+                ex (int, optional): 以秒为单位的过期时间。默认为None。
+            """
             if not isinstance(value, str):
-                value = json.dumps(value)
+                value = json.dumps(value, cls=JSONExtensionEncoder)
             self.set(key, value, ex)
 
     class AsyncRedisClient(AsyncRedis):
@@ -59,19 +76,33 @@ class RedisManager:
         def __init__(self, db):
             super().__init__(connection_pool=AsyncConnectionPool(db=db, **RedisManager.REDIS_CONFIG))
 
-        async def delete_all(self):
-            async for key in self.keys():
-                await self.delete(key)
-
         async def get_object(self, key, default=None):
+            """
+            使用给定的键从缓存中检索对象。
+
+            Args:
+                key (str): 储值的键。
+                default (Any, optional): 没查到数据时返回的值，默认None。
+
+            Returns:
+                list | dict | Any: json.loads后的对象或default
+            """
             if value := await self.get(key):
                 return json.loads(value)
             else:
                 return default
 
         async def set_object(self, key, value, ex=None):
+            """
+            使用指定的键在缓存中设置一个值。
+
+            Args:
+                key (str): 储值的键。
+                value (dict | list): 可json.dumps的数据。
+                ex (int, optional): 以秒为单位的过期时间。默认为None。
+            """
             if not isinstance(value, str):
-                value = json.dumps(value)
+                value = json.dumps(value, cls=JSONExtensionEncoder)
             await self.set(key, value, ex)
 
     @staticmethod

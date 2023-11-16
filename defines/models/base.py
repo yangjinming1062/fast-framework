@@ -34,10 +34,10 @@ class ModelBase:
     @classmethod
     def get_columns(cls):
         """
-        获取类中的全部数据库列的名称。
+        获取类中的全部数据库列。
 
         Returns:
-            dict: key是列名称，value是列定义
+            dict[str, ColumnProperty]: key是列名称，value是列定义
         """
         return {p.key: p for p in cls.__mapper__.iterate_properties if isinstance(p, ColumnProperty)}
 
@@ -46,6 +46,7 @@ class PostgresModelBase(DeclarativeBase, ModelBase):
     """
     OLTP模型基类
     """
+
     __abstract__ = True
 
     id: Mapped[str_id] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-12:])
@@ -55,6 +56,7 @@ class ClickhouseModelBase(DeclarativeBase, ModelBase):
     """
     OLAP模型基类
     """
+
     __abstract__ = True
 
     @classmethod
@@ -82,6 +84,7 @@ class TimeColumns:
     """
     时间列基类
     """
+
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(default=func.now())

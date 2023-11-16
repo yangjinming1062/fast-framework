@@ -18,7 +18,7 @@ from .classes import JSONExtensionEncoder
 
 class KafkaManager:
     """
-    Kafka管理器，简化生成和消费的处理
+    Kafka管理器
     """
 
     PRODUCER = Producer(CONFIG.kafka_producer_config)
@@ -26,10 +26,11 @@ class KafkaManager:
     @staticmethod
     def get_consumer(*topic, group_name=None, partition=None):
         """
-        创建一个消费者。
+        创建一个消费者（返回的消费者已完成指定*topic的订阅）。
+        PS: 位置参数为需要订阅的topic名称，其他参数请使用关键字指定
 
         Args:
-            topic: 消费的主题都有哪些。
+            topic: 消费的主题。
             group_name (str): 组名称，默认None时使用CONFIG中的默认值。
             partition (int): 指定监听的分区。
 
@@ -65,6 +66,7 @@ class KafkaManager:
     def consume(*topic, consumer=None, limit=None, need_load=True):
         """
         消费指定主题的数据。
+        PS: 位置参数为需要订阅的topic名称，其他参数请使用关键字指定
 
         Args:
             topic: 需要消费的主题。
@@ -124,7 +126,6 @@ class KafkaManager:
         Args:
             topic (str): 主题的名称。
             data (dict | list | str): 要发送的数据, 建议批量发送以提高效率。
-            kwargs: 其他需要在produce时使用的参数参数
 
         Returns:
             None

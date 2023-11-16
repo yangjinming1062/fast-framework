@@ -2,7 +2,7 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 File Name   : secret.py
 Author      : jinming.yang@qingteng.cn
-Description : 
+Description : 加解密实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
 from cryptography.fernet import Fernet

@@ -72,11 +72,8 @@ class KafkaManager:
             limit (int, optional): 批处理中要使用的消息数。默认值为None，表示每次返回单个消息。
             need_load (bool, optional): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
 
-        Returns:
-            list | dict: 如果指定了“limit”，则返回JSON解码消息的列表。
-
         Yields:
-            dict | str: 如果“limit”为None，则以生成器的方式每次返回单个JSON解码消息。
+            list | dict | str: 如果指定了“limit”，则返回JSON解码消息的列表。
 
         Raises:
             ValueError: 当kafka发生错误时抛出异常。
@@ -98,14 +95,12 @@ class KafkaManager:
         try:
             if limit:
                 # 批量消费
-                msgs = consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout)
-                if not msgs:
-                    return []
-                offset = msgs[0].offset()
-                partition_id = msgs[0].partition()
-                topic = msgs[0].topic()
-                logger.info(f'{topic=}:{partition_id=}, {offset=}')
-                return [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
+                if msgs := consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout):
+                    offset = msgs[0].offset()
+                    partition_id = msgs[0].partition()
+                    topic = msgs[0].topic()
+                    logger.info(f'{topic=}:{partition_id=}, {offset=}')
+                    yield [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
             else:
                 # 持续轮询，返回收到的第一条非空消息
                 while True:
@@ -122,13 +117,14 @@ class KafkaManager:
                 consumer.close()
 
     @staticmethod
-    async def produce(topic, data):
+    async def produce(topic, data, **kwargs):
         """
         生成指定主题的数据。
 
         Args:
             topic (str): 主题的名称。
             data (dict | list | str): 要发送的数据, 建议批量发送以提高效率。
+            kwargs: 其他需要在produce时使用的参数参数
 
         Returns:
             None
@@ -146,7 +142,7 @@ class KafkaManager:
             """
             if isinstance(value, dict):
                 value = json.dumps(value, cls=JSONExtensionEncoder)
-            KafkaManager.PRODUCER.produce(topic=topic, value=value, callback=KafkaManager.delivery_report)
+            KafkaManager.PRODUCER.produce(topic=topic, value=value, callback=KafkaManager.delivery_report, **kwargs)
 
         if isinstance(data, list):
             index = 1

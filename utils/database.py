@@ -101,5 +101,7 @@ class DatabaseManager:
         if exc_value:
             await self.session.rollback()
         if self.autocommit:
-            await self.session.commit()
+            # !!! asynch的commit会raise errors.NotSupportedError
+            # SQLAlchemy的commit在运行完会调用底层driver的commit也就是会抛出异常（但是数据已经提交了），因此改用flush
+            await self.session.flush()
         await self.session.close()

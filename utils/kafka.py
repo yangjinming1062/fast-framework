@@ -22,6 +22,8 @@ class KafkaManager:
     """
 
     PRODUCER = Producer(CONFIG.kafka_producer_config)
+    _QUEUE_SIZE = 0
+    _QUEUE_LIMIT = CONFIG.kafka_producer_queue_size - 10
 
     @staticmethod
     def get_consumer(*topic, group_name=None, partition=None):
@@ -53,12 +55,12 @@ class KafkaManager:
 
         Args:
             err (str): 错误消息（如果有）。
-            msg (str): 发给Kafka的信息。
+            msg (Message): 发给Kafka的信息。
 
         Returns:
             None
         """
-        logger.debug(f'Kafka Sent:{msg}')
+        # logger.debug(f'Kafka Sent:{msg.value()}')
         if err is not None:
             logger.error('Kafka发生失败', err)
 
@@ -97,12 +99,13 @@ class KafkaManager:
         try:
             if limit:
                 # 批量消费
-                if msgs := consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout):
-                    offset = msgs[0].offset()
-                    partition_id = msgs[0].partition()
-                    topic = msgs[0].topic()
-                    logger.info(f'{topic=}:{partition_id=}, {offset=}')
-                    yield [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
+                while True:
+                    if msgs := consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout):
+                        offset = msgs[0].offset()
+                        partition_id = msgs[0].partition()
+                        topic = msgs[0].topic()
+                        logger.info(f'{topic=}:{partition_id=}, {offset=}')
+                        yield [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
             else:
                 # 持续轮询，返回收到的第一条非空消息
                 while True:
@@ -112,14 +115,16 @@ class KafkaManager:
                     if msg.error():
                         raise ValueError(msg.error())
                     yield load(msg) if need_load else msg.value()
-        finally:
+        except Exception as ex:
+            logger.error(ex)
             # 不是函数内创建的消费者不进行取消订阅以及关闭操作
             if flag:
                 consumer.unsubscribe()
                 consumer.close()
+            raise ex
 
     @staticmethod
-    async def produce(topic, data, **kwargs):
+    def produce(topic, data, **kwargs):
         """
         生成指定主题的数据。
 
@@ -131,7 +136,7 @@ class KafkaManager:
             None
         """
 
-        async def produce_data(value):
+        def produce_data(value):
             """
             单次发送指定主题的数据。
 
@@ -144,16 +149,15 @@ class KafkaManager:
             if isinstance(value, dict):
                 value = json.dumps(value, cls=JSONExtensionEncoder)
             KafkaManager.PRODUCER.produce(topic=topic, value=value, callback=KafkaManager.delivery_report, **kwargs)
+            KafkaManager._QUEUE_SIZE += 1
+            if KafkaManager._QUEUE_SIZE >= KafkaManager._QUEUE_LIMIT:
+                KafkaManager.PRODUCER.flush()
+                KafkaManager._QUEUE_SIZE = 0
 
         if isinstance(data, list):
-            index = 1
             for item in data:
-                if index >= CONFIG.kafka_producer_queue_size:
-                    KafkaManager.PRODUCER.poll(0)
-                    index = 1
-                await produce_data(item)
-                index += 1
+                produce_data(item)
         else:
-            await produce_data(data)
-        # 确保交付
-        KafkaManager.PRODUCER.poll(0)
+            produce_data(data)
+            tmp = KafkaManager.PRODUCER.poll(0)
+            KafkaManager._QUEUE_SIZE -= tmp

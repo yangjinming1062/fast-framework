@@ -49,7 +49,7 @@ def generate_key(*args, need_uuid=False):
         str | UUID: 生成的Key。
     """
     if args:
-        source = '-'.join(list(map(str, args)))
+        source = '-'.join((str(x) for x in args))
         tmp = uuid.uuid5(uuid.NAMESPACE_DNS, source)
     else:
         tmp = uuid.uuid4()

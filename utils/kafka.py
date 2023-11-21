@@ -72,9 +72,9 @@ class KafkaManager:
 
         Args:
             topic: 需要消费的主题。
-            consumer (Consumer, optional): 默认为None时会自动创建一个消费者，并在方法结束调用后取消订阅并关闭自动创建的消费者对象。
-            limit (int, optional): 批处理中要使用的消息数。默认值为None，表示每次返回单个消息。
-            need_load (bool, optional): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
+            consumer (Consumer | None): 默认为None时会自动创建一个消费者，并在方法结束调用后取消订阅并关闭自动创建的消费者对象。
+            limit (int | None): 批处理中要使用的消息数。默认值为None，表示每次返回单个消息。
+            need_load (bool | None): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
 
         Yields:
             list | dict | str: 如果指定了“limit”，则返回JSON解码消息的列表。
@@ -91,8 +91,8 @@ class KafkaManager:
                 str_message = bytes_message.decode('utf-8', 'replace')
             try:
                 return json.loads(str_message)
-            except Exception:
-                logger.error(f'Kafka消费失败，无法解析消息：{str_message}')
+            except Exception as e:
+                logger.error(f'Kafka消费失败，无法解析消息：{str_message}: {e=}')
 
         if flag := consumer is None:
             consumer = KafkaManager.get_consumer(*topic)
@@ -161,3 +161,4 @@ class KafkaManager:
             produce_data(data)
             tmp = KafkaManager.PRODUCER.poll(0)
             KafkaManager._QUEUE_SIZE -= tmp
+            logger.info(f'Kafka 处理的事件数：{tmp}')

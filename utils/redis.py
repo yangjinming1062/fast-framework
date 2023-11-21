@@ -45,7 +45,7 @@ class RedisManager:
 
             Args:
                 key (str): 储值的键。
-                default (Any, optional): 没查到数据时返回的值，默认None。
+                default (Any): 没查到数据时返回的值，默认None。
 
             Returns:
                 list | dict | Any: json.loads后的对象或default
@@ -62,7 +62,7 @@ class RedisManager:
             Args:
                 key (str): 储值的键。
                 value (dict | list): 可json.dumps的数据。
-                ex (int, optional): 以秒为单位的过期时间。默认为None。
+                ex (int | None): 以秒为单位的过期时间。默认为None。
             """
             if not isinstance(value, str):
                 value = json.dumps(value, cls=JSONExtensionEncoder)
@@ -82,7 +82,7 @@ class RedisManager:
 
             Args:
                 key (str): 储值的键。
-                default (Any, optional): 没查到数据时返回的值，默认None。
+                default (Any): 没查到数据时返回的值，默认None。
 
             Returns:
                 list | dict | Any: json.loads后的对象或default
@@ -99,7 +99,7 @@ class RedisManager:
             Args:
                 key (str): 储值的键。
                 value (dict | list): 可json.dumps的数据。
-                ex (int, optional): 以秒为单位的过期时间。默认为None。
+                ex (int | None): 以秒为单位的过期时间。默认为None。
             """
             if not isinstance(value, str):
                 value = json.dumps(value, cls=JSONExtensionEncoder)

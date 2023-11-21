@@ -31,14 +31,14 @@ if CONFIG.log_dir:
     logger.add(
         os.path.join(CONFIG.log_dir, CONFIG.log_info_name),
         format=CONFIG.log_format,
-        filter=lambda x: x['level'].name in ['DEBUG', 'INFO'],
+        filter=lambda _x: _x['level'].name in ['DEBUG', 'INFO'],
         retention=CONFIG.log_retention,
         level=CONFIG.log_level,
     )
     logger.add(
         os.path.join(CONFIG.log_dir, CONFIG.log_error_name),
         format=CONFIG.log_format,
-        filter=lambda x: x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
+        filter=lambda _x: _x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
         retention=CONFIG.log_retention,
         level='WARNING',
     )

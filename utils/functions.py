@@ -18,7 +18,7 @@ def exceptions(default=None):
     装饰器: 异常捕获。
 
     Args:
-        default (Any, optional): 当发生异常时返回的值。
+        default (Any | None): 当发生异常时返回的值。
 
     Returns:
         Any: 返回结果取决于执行的函数是否发生异常，如果发生异常则返回default的值，没有则返回函数本身的执行结果。

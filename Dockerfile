@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py .
 ## 环境变量配置读取
 COPY .env .
-COPY configuration.py .
+COPY configurations configurations
 ## 基础数据
 COPY resources/initDB.sh initDB.sh
 COPY resources resources
@@ -22,8 +22,6 @@ COPY resources resources
 COPY utils utils
 ## API接口
 COPY api api
-## 业务逻辑
-# COPY business business
 ## 非接口命令文件
 COPY command.py .
 ## 数据模型定义
@@ -36,4 +34,4 @@ EXPOSE 8080
 # ENTRYPOINT ["/bin/bash", "-c", "source ./initDB.sh"]
 
 # 容器启动后默认执行的命令及参数，能够被docker run 命令后面的命令行参数替换
-CMD ["/bin/bash", "-c", "source ./initDB.sh && uvicorn main:app --port=8080"]
+CMD ["/bin/bash", "-c", "source ./initDB.sh && uvicorn main:app --host=0.0.0.0 --port=8080"]

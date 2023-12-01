@@ -22,17 +22,17 @@ from sqlalchemy import select
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from configuration import CONSTANTS
+from configurations import *
 from defines import *
 from utils import *
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl='token')
 ALGORITHM = 'HS256'
 
 _CH_TABLES = {item.__tablename__ for item in ClickhouseModelsDict.values()}
 
 
-async def get_user(token: str = Depends(oauth2_scheme)):
+async def get_user(token: str = Depends(OAUTH2_SCHEME)):
     try:
         payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
         if uid := payload.get('uid'):

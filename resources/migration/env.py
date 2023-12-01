@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from configurations import CONFIG
-from defines import PostgresModelBase
+from definitions import PostgresModelBase
 
 config = context.config
 

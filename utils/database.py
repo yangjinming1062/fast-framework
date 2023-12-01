@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 
 from configurations import CONFIG
-from defines import SessionTypeEnum
+from definitions import SessionTypeEnum
 
 _ENGINE_PARAMS = {
     'pool_size': CONFIG.db_pool_size,

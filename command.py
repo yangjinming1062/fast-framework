@@ -10,7 +10,7 @@ Options:
 """
 from docopt import docopt
 
-from defines import *
+from definitions import *
 from utils import *
 
 

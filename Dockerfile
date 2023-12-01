@@ -25,7 +25,7 @@ COPY api api
 ## 非接口命令文件
 COPY command.py .
 ## 数据模型定义
-COPY defines defines
+COPY definitions definitions
 
 ### 对外暴露端口
 EXPOSE 8080

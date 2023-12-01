@@ -11,7 +11,7 @@ from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
-from configuration import CONFIG
+from configurations import CONFIG
 from utils import logger
 from .classes import JSONExtensionEncoder
 

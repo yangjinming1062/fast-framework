@@ -1,21 +1,13 @@
 """
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : configuration.py
-Author      : jinming.yang
-Description : 常量、环境变量，各种参数配置
+File Name   : environment.py
+Author      : jinming.yang@qingteng.cn
+Description : 环境变量
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
-
-
-class CONSTANTS:
-    """
-    常量定义：常量类型_常量名称
-    """
-
-    FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
 
 
 class Config(BaseSettings):
@@ -93,8 +85,3 @@ class Config(BaseSettings):
             'group.id': self.kafka_group,
             'bootstrap.servers': self.kafka_address,
         }
-
-
-CONFIG = Config()
-
-__all__ = ['CONFIG', 'CONSTANTS']

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 
-from configurations import CONFIG
+from configs import CONFIG
 from definitions import SessionTypeEnum
 
 _ENGINE_PARAMS = {

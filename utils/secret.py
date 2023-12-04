@@ -7,7 +7,7 @@ Description : 加解密实现
 """
 from cryptography.fernet import Fernet
 
-from configurations import CONFIG
+from configs import CONFIG
 
 SECRET = Fernet(CONFIG.secret_key)
 

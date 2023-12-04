@@ -14,7 +14,7 @@ from ipaddress import IPv6Address
 
 from sqlalchemy.engine import Row
 
-from configurations import CONSTANTS
+from configs import CONSTANTS
 
 
 class Singleton(type):

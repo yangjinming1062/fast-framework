@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from configurations import *
+from configs import *
 from definitions import *
 from utils import *
 

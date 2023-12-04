@@ -10,7 +10,7 @@ import sys
 
 from loguru import logger
 
-from configurations import CONFIG
+from configs import CONFIG
 from .classes import JSONExtensionEncoder
 from .classes import Singleton
 from .database import DatabaseManager

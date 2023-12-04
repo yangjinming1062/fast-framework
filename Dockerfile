@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py .
 ## 环境变量配置读取
 COPY .env .
-COPY configurations configurations
+COPY configs configs
 ## 基础数据
 COPY resources/initDB.sh initDB.sh
 COPY resources resources

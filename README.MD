@@ -1,9 +1,12 @@
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-v2.0+-blue)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104.0+-green)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-v2.0+-green)
+
 <br/>
 <h1 align="center">
 FastAPI后端项目框架
 </h1>
-<h4 align="center">专注于我的业务逻辑.</h4>
+<h4 align="center">专注于你的业务逻辑.</h4>
 
 [//]: # (<h4 align="center">)
 

@@ -1,5 +1,5 @@
 # 构建运行时环境
-FROM python:3.11-slim-buster
+FROM python:3.12-slim-buster
 # 设置时区
 ENV TZ=Asia/Shanghai
 # 设置语言

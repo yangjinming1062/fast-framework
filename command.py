@@ -1,20 +1,9 @@
-"""
-Usage:
-    command.py user [--account=<admin>] [--username=<username>] [--password=<password>]
-    command.py init
-    command.py -h | --help
-Options:
-    --account=<admin>            初始账号 [default: admin]
-    --username=<username>        初始用户名 [default: 默认管理员]
-    --password=<password>        初始用户密码 [default: m/W*0-nS0t5]
-"""
-from docopt import docopt
+import argparse
 
 from definitions import *
 from utils import *
 
 
-@exceptions()
 def init_user(account, username, password):
     """
     添加初始用户。
@@ -52,12 +41,38 @@ def init_database():
     pass
 
 
-if __name__ == '__main__':
-    options = docopt(__doc__, version='Command v1.0')
-    if options['user']:
-        init_user(options['--account'], options['--username'], options['--password'])
-    elif options['init']:
+def main():
+    parser = argparse.ArgumentParser(description='Command v1.0')
+    # 添加位置参数
+    parser.add_argument('command', help='命令')
+    # 添加选项参数
+    parser.add_argument(
+        '--account',
+        default='admin',
+        help='初始账号',
+    )
+    parser.add_argument(
+        '--username',
+        default='默认管理员',
+        help='初始用户名',
+    )
+    parser.add_argument(
+        '--password',
+        default='m/W*0-nS0t5',
+        help='初始用户密码',
+    )
+
+    args = parser.parse_args()
+
+    # 处理命令
+    if args.command == 'user':
+        init_user(args.account, args.username, args.password)
+    elif args.command == 'init':
         init_database()
     else:
         print('Missed Options')
     print('Success!')
+
+
+if __name__ == '__main__':
+    main()

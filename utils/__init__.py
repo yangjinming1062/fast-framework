@@ -29,7 +29,7 @@ if CONFIG.log_dir:
     _c = {
         'handlers': [
             {
-                'sink'  : sys.stdout,
+                'sink'  : os.path.join(CONFIG.log_dir, CONFIG.log_info_name),
                 'format': CONFIG.log_format,
                 'filter': lambda _x: _x['level'].name in ['DEBUG', 'INFO'],
                 'level' : CONFIG.log_level,

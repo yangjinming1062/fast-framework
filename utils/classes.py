@@ -5,7 +5,6 @@ Author      : jinming.yang@qingteng.cn
 Description : 基础工具类定义
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
-import base64
 import json
 from datetime import datetime
 from enum import Enum
@@ -15,6 +14,7 @@ from ipaddress import IPv6Address
 from sqlalchemy.engine import Row
 
 from configs import CONSTANTS
+from .functions import bytes_to_str
 
 
 class Singleton(type):
@@ -46,5 +46,5 @@ class JSONExtensionEncoder(json.JSONEncoder):
             return str(obj)
         if isinstance(obj, bytes):
             # 将bytes类型转为base64编码的字符串
-            return base64.b64encode(obj).decode('utf-8')
+            return bytes_to_str(obj)
         return json.JSONEncoder.default(self, obj)

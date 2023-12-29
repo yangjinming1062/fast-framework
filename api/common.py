@@ -139,7 +139,7 @@ def orm_delete(cls, data):
         raise HTTPException(400, '无效资源选择')
 
 
-def paginate_query(sql, paginate, schema, format_func=None, session=None, with_total=False):
+def paginate_query(sql, paginate, schema, format_func=None, session=None):
     """
     分页查询结果。
     PS：因为paginate_query中执行数据查询的时候scalar被固定为False，因此不能直接select(cls)
@@ -150,7 +150,6 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
         schema (Type[PaginateResponse]): 接口响应数据定义。
         format_func: 用于格式化查询结果的函数， 默认None则不进行额外操作。
         session (Session | None): 默认None时根据查询对象自动判断，无法自动判断查询数据库时需要指定的查询连接。
-        with_total (bool): 查询结果中的最后一列是否为总数, 默认为False。
 
     Returns:
         包含总计数和查询结果数据的词典。
@@ -158,12 +157,7 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
     engine = SessionTypeEnum.CH if sql.froms[0].name in _CH_TABLES else SessionTypeEnum.PG
     # 计算总行数
     with DatabaseManager(engine, session=session) as db:
-        if not with_total:
-            # 如果查询的列中不包含总数则先查总数再附加分页及排序条件
-            total = db.scalar(select(func.count()).select_from(sql))
-        else:
-            # 最后一列是总数时跳过查询总数
-            total = 0
+        total = db.scalar(select(func.count()).select_from(sql))
         # 将分页参数应用于查询
         if paginate.size is not None:
             sql = sql.limit(paginate.size)
@@ -187,9 +181,6 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None, with_t
         # 应用format_func（如果提供）
         if format_func:
             data = [format_func(x) for x in data]
-        # 如果最后一列是总计数，则更新总计数
-        if with_total and data:
-            total = data[0][-1]
         result = schema(total=total, data=data)
         # 统一进行数据导出的处理
         return download_file(result.data, schema.__doc__.strip()) if paginate.export else result

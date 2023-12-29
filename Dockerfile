@@ -7,8 +7,8 @@ ENV LANG=zh_CN.UTF-8
 # 设置工作目录
 WORKDIR /fast
 # 安装python库
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements .
+RUN pip install --no-cache-dir -r requirements
 # 拷贝项目内容
 ## API服务启动文件
 COPY main.py .

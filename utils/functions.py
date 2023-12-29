@@ -38,11 +38,12 @@ def exceptions(default=None):
     return decorator
 
 
-def generate_key(*args, need_uuid=False):
+def generate_key(*args, key_len=24, need_uuid=False):
     """
-    根据输入的参数生成一个12个字符的key。
+    根据输入的参数生成一个唯一性标识。
 
     Args:
+        key_len (int): 生成非UUID密钥时的字符个数（最多36个），默认24。
         need_uuid (bool): 是否需要返回uuid格式的key，默认False返回短字符串。
 
     Returns:
@@ -53,7 +54,7 @@ def generate_key(*args, need_uuid=False):
         tmp = uuid.uuid5(uuid.NAMESPACE_DNS, source)
     else:
         tmp = uuid.uuid4()
-    return tmp if need_uuid else tmp.hex[-12:]
+    return tmp if need_uuid else tmp.hex[-key_len:]
 
 
 def bytes_to_str(value):
@@ -98,7 +99,7 @@ def time_function(func):
         start_time = time()
         result = func(*args, **kwargs)
         end_time = time()
-        logger.info(f'{func.__name__} 耗时 {(end_time - start_time):.3f}s')
+        logger.debug(f'{func.__name__} 耗时 {(end_time - start_time):.4f}s')
         return result
 
     return decorated

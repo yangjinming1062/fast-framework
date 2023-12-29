@@ -19,7 +19,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.properties import ColumnProperty
 from typing_extensions import Annotated
 
-str_id = Annotated[str, mapped_column(String(16), index=True)]
+str_id = Annotated[str, mapped_column(String(36), index=True)]
 str_small = Annotated[str, mapped_column(String(32))]
 str_medium = Annotated[str, mapped_column(String(64))]
 str_large = Annotated[str, mapped_column(String(128))]
@@ -49,7 +49,7 @@ class PostgresModelBase(DeclarativeBase, ModelBase):
 
     __abstract__ = True
 
-    id: Mapped[str_id] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-12:])
+    id: Mapped[str_id] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-24:])
 
 
 class ClickhouseModelBase(DeclarativeBase, ModelBase):

@@ -1,5 +1,5 @@
 # Framework
-fastapi>=0.104.0,<0.105.0
+fastapi>=0.106
 uvicorn>=0.24.0
 pydantic>=2.5.2
 ## .env

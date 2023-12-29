@@ -7,7 +7,6 @@ Description : 在init中导入各个子文件中的类、方法就可以直接�
 """
 import os
 import sys
-
 from loguru import logger
 
 from configs import CONFIG
@@ -27,22 +26,30 @@ if CONFIG.log_dir:
     # 日志记录
     if not os.path.exists(CONFIG.log_dir):
         os.mkdir(CONFIG.log_dir)
-    logger.add(
-        os.path.join(CONFIG.log_dir, CONFIG.log_info_name),
-        format=CONFIG.log_format,
-        filter=lambda _x: _x['level'].name in ['DEBUG', 'INFO'],
-        retention=CONFIG.log_retention,
-        level=CONFIG.log_level,
-    )
-    logger.add(
-        os.path.join(CONFIG.log_dir, CONFIG.log_error_name),
-        format=CONFIG.log_format,
-        filter=lambda _x: _x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
-        retention=CONFIG.log_retention,
-        level='WARNING',
-    )
-if CONFIG.log_stdout:
-    logger.add(sys.stdout, colorize=True, format=CONFIG.log_format)
+    _c = {
+        'handlers': [
+            {
+                'sink'  : sys.stdout,
+                'format': CONFIG.log_format,
+                'filter': lambda _x: _x['level'].name in ['DEBUG', 'INFO'],
+                'level' : CONFIG.log_level,
+            },
+            {
+                'sink'  : os.path.join(CONFIG.log_dir, CONFIG.log_error_name),
+                'format': CONFIG.log_format,
+                'filter': lambda _x: _x['level'].name in ['WARNING', 'ERROR', 'CRITICAL'],
+                'level' : 'WARNING',
+            }
+        ],
+    }
+    if CONFIG.log_stdout:
+        _c['handlers'].append({
+            'sink'    : sys.stdout,
+            'colorize': True,
+            'format'  : CONFIG.log_format,
+            'level'   : CONFIG.log_level,
+        })
+    logger.configure(**_c)
 
 __all__ = [
     'logger',

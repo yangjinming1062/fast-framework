@@ -14,12 +14,11 @@ class Config(BaseSettings):
     model_config = SettingsConfigDict(env_file=('.env', 'dev.env'), env_file_encoding='utf-8', extra='ignore')
     # 日志记录
     log_dir: str = ''
-    log_level: str = 'DEBUG'
+    log_level: str = 'INFO'
     log_info_name: str = 'info.log'
     log_error_name: str = 'error.log'
     log_stdout: bool = True
     log_format: str = '{time:YYYY-MM-DD HH:mm:ss}|<level>{message}</level>'
-    log_retention: str = '1 days'
     # DB连接参数
     db_pool_size: int = 150
     db_pool_recycle: int = 60

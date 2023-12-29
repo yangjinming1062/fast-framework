@@ -84,15 +84,10 @@ class KafkaManager:
         """
 
         def load(item):
-            bytes_message = item.value()
             try:
-                str_message = bytes_message.decode('utf-8', 'strict')
-            except UnicodeDecodeError:
-                str_message = bytes_message.decode('utf-8', 'replace')
-            try:
-                return json.loads(str_message)
+                return json.loads(item.value())
             except Exception as e:
-                logger.error(f'Kafka消费失败，无法解析消息：{str_message}: {e=}')
+                logger.error(f'Kafka消费失败，无法解析消息：{item.value()}: {e=}')
 
         if flag := consumer is None:
             consumer = KafkaManager.get_consumer(*topic)
@@ -161,4 +156,4 @@ class KafkaManager:
             produce_data(data)
             tmp = KafkaManager.PRODUCER.poll(0)
             KafkaManager._QUEUE_SIZE -= tmp
-            logger.info(f'Kafka 处理的事件数：{tmp}')
+            logger.debug(f'Kafka 处理的事件数：{tmp}')

@@ -33,6 +33,14 @@ FastAPI后端项目框架
 3. 生成服务端镜像
 4. 通过docker-compose整体启动
 
+```部署doris数据库
+cd resource/doris
+kubectl apply -f crd.yaml
+kubectl apply -f operator.yaml
+kubectl create namespace database
+kubectl apply -f cluster.yaml -n database
+```
+
 ```启动docker-compose
 docker-compose -f docker-compose.yml up -d
 ```

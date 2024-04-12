@@ -1,0 +1,19 @@
+# Framework
+fastapi==0.110.1
+uvicorn==0.29.0
+pydantic==2.6.4
+## .env
+pydantic-settings==2.2.1
+python-dotenv==1.0.1
+## jwt
+python-jose>=3.3.0
+# Secret
+cryptography==42.0.5
+# DB
+SQLAlchemy>=2.0.29
+sqlalchemy-doris[pymysql]
+redis>=5.0.1
+confluent-kafka>=2.3.0
+# Other
+requests>=2.31.0
+loguru>=0.7.2

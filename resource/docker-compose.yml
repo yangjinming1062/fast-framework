@@ -1,0 +1,25 @@
+version: '3.1'
+services:
+  kafka:
+    restart: always
+    image: bitnami/kafka:3.4
+    env_file: args.env
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+
+  redis:
+    restart: always
+    image: bitnami/redis:7.0
+    env_file: args.env
+    ports:
+      - "6379:6379"
+
+  backend:
+    restart: always
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+    env_file: args.env
+    ports:
+      - "8080:8080"

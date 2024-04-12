@@ -5,12 +5,12 @@ Author      : jinming.yang
 Description : API接口会共用到的一些类、方法的定义实现
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
+
 import csv
 from io import StringIO
 
 from fastapi import APIRouter
 from fastapi import Depends
-from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
@@ -22,30 +22,36 @@ from sqlalchemy import select
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from configs import *
-from definitions import *
-from utils import *
+from component import *
+from config import *
+from definition import *
 
-OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl='token')
-ALGORITHM = 'HS256'
-
-_CH_TABLES = {item.__tablename__ for item in ClickhouseModelsDict.values()}
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
 
 
 async def get_user(token: str = Depends(OAUTH2_SCHEME)):
+    """
+    需要鉴权的接口通过查询用户信息判断用户是否有权限访问。
+
+    Args:
+        token:
+
+    Returns:
+
+    """
     try:
-        payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[ALGORITHM])
-        if uid := payload.get('uid'):
-            with DatabaseManager(SessionTypeEnum.PG) as db:
+        payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[CONSTANTS.JWT_ALGORITHM])
+        if uid := payload.get("uid"):
+            with DatabaseManager() as db:
                 if user := db.get(User, uid):
                     db.expunge(user)
                     return user
                 else:
-                    raise HTTPException(404)
+                    raise APIException(404, APICode.NO_DATA)
         else:
-            raise HTTPException(401, '无效的认证信息')
+            raise APIException(401, APICode.INVALID_TOKEN)
     except JWTError:
-        raise HTTPException(401, '无效的认证信息')
+        raise APIException(401, APICode.INVALID_TOKEN)
 
 
 def get_router(path, name, skip_auth=False):
@@ -67,7 +73,7 @@ def get_router(path, name, skip_auth=False):
         return APIRouter(prefix=url_prefix, tags=[name], dependencies=[Depends(get_user)])
 
 
-def create_instance(instance, error_msg='无效输入') -> str:
+def create_instance(instance, error_msg=None) -> str:
     """
     新增数据实例。
 
@@ -78,18 +84,17 @@ def create_instance(instance, error_msg='无效输入') -> str:
     Returns:
         str: 新增数据的ID。
     """
-    instance.updated_at = datetime.now()
     try:
-        with DatabaseManager(SessionTypeEnum.PG) as db:
+        with DatabaseManager() as db:
             db.add(instance)
             db.flush()
             return instance.id
     except IntegrityError as ex:
         logger.debug(ex)
-        raise HTTPException(422, error_msg)
+        raise APIException(422, APICode.CREATE, error_msg)
 
 
-def update_instance(cls, instance_id, params, error_msg='无效输入'):
+def update_instance(cls, instance_id, params, error_msg=None):
     """
     更新ORM数据。
 
@@ -102,8 +107,7 @@ def update_instance(cls, instance_id, params, error_msg='无效输入'):
     Returns:
         None
     """
-    params['updated_at'] = datetime.now()
-    with DatabaseManager(SessionTypeEnum.PG) as db:
+    with DatabaseManager() as db:
         if item := db.get(cls, instance_id):
             try:
                 for key, value in params.items():
@@ -112,9 +116,9 @@ def update_instance(cls, instance_id, params, error_msg='无效输入'):
                 db.commit()
             except IntegrityError as ex:
                 logger.debug(ex)
-                raise HTTPException(422, error_msg)
+                raise APIException(422, APICode.UPDATE, error_msg)
         else:
-            raise HTTPException(404, '未找到对应资源')
+            raise APIException(404, APICode.QUERY)
 
 
 def orm_delete(cls, data):
@@ -130,16 +134,16 @@ def orm_delete(cls, data):
     """
 
     try:
-        with DatabaseManager(SessionTypeEnum.PG) as db:
+        with DatabaseManager() as db:
             # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
             for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
                 db.delete(instance)
     except Exception as ex:
         logger.exception(ex)
-        raise HTTPException(400, '无效资源选择')
+        raise APIException(400, APICode.DELETE, str(ex))
 
 
-def paginate_query(sql, paginate, schema, format_func=None, session=None):
+def paginate_query(sql, paginate, resp_schema, id_column, format_func=None, session=None):
     """
     分页查询结果。
     PS：因为paginate_query中执行数据查询的时候scalar被固定为False，因此不能直接select(cls)
@@ -147,16 +151,16 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None):
     Args:
         sql (Select): SQL查询。
         paginate (PaginateRequest): 分页参数。
-        schema (Type[PaginateResponse]): 接口响应数据定义。
+        resp_schema (Type[PaginateResponse]): 接口响应数据定义。
+        id_column (Column): 下载时按id过滤的列。
         format_func: 用于格式化查询结果的函数， 默认None则不进行额外操作。
-        session (Session | None): 默认None时根据查询对象自动判断，无法自动判断查询数据库时需要指定的查询连接。
+        session (Session | None): 默认None时自动新建。
 
     Returns:
         包含总计数和查询结果数据的词典。
     """
-    engine = SessionTypeEnum.CH if sql.froms[0].name in _CH_TABLES else SessionTypeEnum.PG
     # 计算总行数
-    with DatabaseManager(engine, session=session) as db:
+    with DatabaseManager(session=session) as db:
         total = db.scalar(select(func.count()).select_from(sql))
         # 将分页参数应用于查询
         if paginate.size is not None:
@@ -164,26 +168,26 @@ def paginate_query(sql, paginate, schema, format_func=None, session=None):
         if paginate.page is not None:
             sql = sql.offset(paginate.page * paginate.size)
         # 导出数据时可以提供待导出数据的ID进行过滤
-        if paginate.export and paginate.keys:
-            sql = sql.where(Column('id').in_(paginate.keys))
+        if paginate.export and paginate.key:
+            sql = sql.where(id_column.in_(paginate.key))
         # 对查询结果进行排序
         for column_name in paginate.sort or []:
-            if column_name == '':
+            if column_name == "":
                 continue
-            if column_name[0] in ('+', '-'):
-                direct = 'DESC' if column_name[0] == '-' else 'ASC'
+            if column_name[0] in ("+", "-"):
+                direct = "DESC" if column_name[0] == "-" else "ASC"
                 column_name = column_name[1:]
             else:
-                direct = 'ASC'
-            sql = sql.order_by(text(f'{column_name} {direct}'))
+                direct = "ASC"
+            sql = sql.order_by(text(f"{column_name} {direct}"))
         # 执行查询
         data = db.execute(sql).fetchall()
         # 应用format_func（如果提供）
         if format_func:
             data = [format_func(x) for x in data]
-        result = schema(total=total, data=data)
+        result = resp_schema(total=total, data=data)
         # 统一进行数据导出的处理
-        return download_file(result.data, schema.__doc__.strip()) if paginate.export else result
+        return download_file(result.data, resp_schema.__doc__.strip()) if paginate.export else result
 
 
 def _add_filter(column, value, op_type):
@@ -196,36 +200,30 @@ def _add_filter(column, value, op_type):
         op_type (str): 操作类型。
 
     Returns:
-        ColumnElement | None
+        ColumnElement | None:
     """
 
     if value is not None:
-        if op_type == 'like':
+        if op_type == "like":
             if isinstance(value, list):
                 # like也可以用于列表：以或的关系
-                return or_(*[column.like(f'%{x}%') for x in value])
+                return or_(*[column.like(f"%{x}%") for x in value])
             else:
                 # 使用like运算符
-                return column.like(f'%{value}%')
-        elif op_type == 'in':
+                return column.like(f"%{value}%")
+        elif op_type == "in":
             # in运算符
             return column.in_(value)
-        elif op_type == 'notin':
+        elif op_type == "notin":
             # notin运算符
             return column.notin_(value)
-        elif op_type == 'datetime':
+        elif op_type == "datetime":
             # 添加时间过滤参数：这个地方可以根据情况调整
-            assert isinstance(value, DateFilterSchema), 'value must be a DateFilterSchema'
+            assert isinstance(value, DateFilterSchema), "value must be a DateFilterSchema"
             return column.between(value.started_at, value.ended_at)
-        elif op_type == 'json':
-            # 列类型是json时添加检索条件，这里直接将json变成text属于一种偷懒做法，具体取决用的数据库类型
-            return func.text(column).like(f'%{value}%')
-        elif op_type == 'ip':
-            # Clickhouse添加IP列的过滤条件
-            return ClickhouseModelBase.ip_filter(column, value)
         else:
             # 其他类似于==,>,<等这种运算符直接添加
-            return eval(f'column {op_type} value')
+            return eval(f"column {op_type} value")
 
 
 def add_filter(sql, query, columns):
@@ -271,11 +269,11 @@ def download_file(data, file_name):
             yield csv_data.getvalue()
 
     if not data:
-        raise HTTPException(400, '所选范围无数据，下载失败')
+        raise APIException(404, APICode.NO_DATA)
 
-    file_name = f'{file_name}_{datetime.now().strftime(CONSTANTS.FORMAT_DATE)}.csv'
+    file_name = f"{file_name}_{datetime.now().strftime(CONSTANTS.FORMAT_DATE)}.csv"
     headers = {
-        'Content-Type': 'text/csv;charset=utf-8',
-        'Content-Disposition': f'attachment; filename="{file_name}"',
+        "Content-Type": "text/csv;charset=utf-8",
+        "Content-Disposition": f'attachment; filename="{file_name}"',
     }
     return StreamingResponse(get_csv(), headers=headers)

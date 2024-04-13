@@ -37,8 +37,8 @@ FastAPI后端项目框架
 cd resource/doris
 kubectl apply -f crd.yaml
 kubectl apply -f operator.yaml
-kubectl create namespace database
-kubectl apply -f cluster.yaml -n database
+kubectl create namespace doris
+kubectl apply -f cluster.yaml -n doris
 ```
 
 ```启动docker-compose

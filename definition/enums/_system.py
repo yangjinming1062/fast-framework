@@ -16,7 +16,7 @@ class APICode(Enum):
     AUTH_FAILED = "0403", "用户名或密码错误"
 
 
-class RoleEnum(Enum):
+class UserIdentifyEnum(Enum):
     """
     用户类型
     """

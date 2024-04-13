@@ -13,7 +13,7 @@ def get_users(params: UsersRequest) -> UsersResponse:
     sql = select(
         User.id,
         User.account,
-        User.role,
+        User.identify,
         User.username,
         User.phone,
         User.email,
@@ -62,4 +62,4 @@ def patch_user(
 @router.delete("/users", status_code=204, summary="删除用户")
 def delete_user(params: list[str] = Query()):
     with DatabaseManager() as db:
-        db.execute(update(User).where(User.id.in_(params), User.role != RoleEnum.Admin).values(valid=False))
+        db.execute(update(User).where(User.id.in_(params), User.identify != UserIdentifyEnum.Admin).values(valid=False))

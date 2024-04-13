@@ -8,10 +8,10 @@ class User(ModelBase, TimeColumns):
     """
 
     __tablename__ = "user"
-    role: Mapped[RoleEnum] = mapped_column(comment="角色")
+    identify: Mapped[UserIdentifyEnum] = mapped_column(comment="角色")
     email: Mapped[str_medium] = mapped_column(comment="邮箱")
     phone: Mapped[str_small] = mapped_column(comment="手机")
     username: Mapped[str_small] = mapped_column(comment="用户名")
     account: Mapped[str_medium] = mapped_column(nullable=False, unique=True, comment="账号")
-    password: Mapped[str_small] = mapped_column(comment="密码")
+    password: Mapped[str_medium] = mapped_column(comment="密码")
     valid: Mapped[bool] = mapped_column(default=True, comment="是否有效")

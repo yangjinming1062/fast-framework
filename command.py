@@ -23,7 +23,7 @@ def init_user(account, username, password):
         user.account = account
         user.username = username
         user.password = generate_key(password)
-        user.role = RoleEnum.Admin
+        user.identify = UserIdentifyEnum.Admin
         user.phone = "-"
         user.email = "-"
         user.updated_at = datetime.now()

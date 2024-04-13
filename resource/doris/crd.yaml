@@ -42,32 +42,21 @@ spec:
             metadata:
               type: object
             spec:
-              description: DorisClusterSpec defines the desired state of DorisCluster
               properties:
                 adminUser:
-                  description: administrator for register or drop component from fe
-                    cluster. adminUser for all component register and operator drop
-                    component.
                   properties:
                     name:
-                      description: the user name for admin service's node.
                       type: string
                     password:
-                      description: password, login to doris db.
                       type: string
                   type: object
                 authSecret:
                   type: string
                 beSpec:
-                  description: defines the be cluster state pod that will be created
-                    by operator.
                   properties:
                     affinity:
-                      description: If specified, the pod's scheduling constraints.
                       properties:
                         nodeAffinity:
-                          description: Describes node affinity scheduling rules for
-                            the pod.
                           properties:
                             preferredDuringSchedulingIgnoredDuringExecution:
                               items:
@@ -75,23 +64,11 @@ spec:
                                   preference:
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
-                                          description: A node selector requirement is
-                                            a selector that contains values, a key,
-                                            and an operator that relates the key and
-                                            values.
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
-                                              description: Represents a key's relationship
-                                                to a set of values. Valid operators
-                                                are In, NotIn, Exists, DoesNotExist.
-                                                Gt, and Lt.
                                               type: string
                                             values:
                                               items:
@@ -121,8 +98,6 @@ spec:
                                     type: object
                                     x-kubernetes-map-type: atomic
                                   weight:
-                                    description: Weight associated with matching the
-                                      corresponding nodeSelectorTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -133,23 +108,16 @@ spec:
                             requiredDuringSchedulingIgnoredDuringExecution:
                               properties:
                                 nodeSelectorTerms:
-                                  description: Required. A list of node selector terms.
-                                    The terms are ORed.
                                   items:
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
                                             values:
-
                                               items:
                                                 type: string
                                               type: array
@@ -159,19 +127,11 @@ spec:
                                           type: object
                                         type: array
                                       matchFields:
-                                        description: A list of node selector requirements
-                                          by node's fields.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
-                                              description: Represents a key's relationship
-                                                to a set of values. Valid operators
-                                                are In, NotIn, Exists, DoesNotExist.
-                                                Gt, and Lt.
                                               type: string
                                             values:
                                               items:
@@ -191,42 +151,22 @@ spec:
                               x-kubernetes-map-type: atomic
                           type: object
                         podAffinity:
-                          description: Describes pod affinity scheduling rules (e.g.
-                            co-locate this pod in the same node, zone, etc. as some
-                            other pod(s)).
                           properties:
                             preferredDuringSchedulingIgnoredDuringExecution:
                               items:
-                                description: The weights of all of the matched WeightedPodAffinityTerm
-                                  fields are added per-node to find the most preferred
-                                  node(s)
                                 properties:
                                   podAffinityTerm:
-                                    description: Required. A pod affinity term, associated
-                                      with the corresponding weight.
                                     properties:
                                       labelSelector:
-                                        description: A label query over a set of resources,
-                                          in this case pods.
                                         properties:
                                           matchExpressions:
-                                            description: matchExpressions is a list
-                                              of label selector requirements. The requirements
-                                              are ANDed.
                                             items:
-                                              description: A label selector requirement
-                                                is a selector that contains values,
-                                                a key, and an operator that relates
-                                                the key and values.
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
                                                 values:
-
                                                   items:
                                                     type: string
                                                   type: array
@@ -244,14 +184,9 @@ spec:
                                       namespaceSelector:
                                         properties:
                                           matchExpressions:
-                                            description: matchExpressions is a list
-                                              of label selector requirements. The requirements
-                                              are ANDed.
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -280,8 +215,6 @@ spec:
                                       - topologyKey
                                     type: object
                                   weight:
-                                    description: weight associated with matching the
-                                      corresponding podAffinityTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -293,15 +226,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-                                    description: A label query over a set of resources,
-                                      in this case pods.
                                     properties:
                                       matchExpressions:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -326,8 +255,6 @@ spec:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -361,37 +288,17 @@ spec:
                           properties:
                             preferredDuringSchedulingIgnoredDuringExecution:
                               items:
-                                description: The weights of all of the matched WeightedPodAffinityTerm
-                                  fields are added per-node to find the most preferred
-                                  node(s)
                                 properties:
                                   podAffinityTerm:
-                                    description: Required. A pod affinity term, associated
-                                      with the corresponding weight.
                                     properties:
                                       labelSelector:
-                                        description: A label query over a set of resources,
-                                          in this case pods.
                                         properties:
                                           matchExpressions:
-                                            description: matchExpressions is a list
-                                              of label selector requirements. The requirements
-                                              are ANDed.
                                             items:
-                                              description: A label selector requirement
-                                                is a selector that contains values,
-                                                a key, and an operator that relates
-                                                the key and values.
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
-                                                  description: operator represents a
-                                                    key's relationship to a set of values.
-                                                    Valid operators are In, NotIn, Exists
-                                                    and DoesNotExist.
                                                   type: string
                                                 values:
                                                   items:
@@ -414,8 +321,6 @@ spec:
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -444,8 +349,6 @@ spec:
                                       - topologyKey
                                     type: object
                                   weight:
-                                    description: weight associated with matching the
-                                      corresponding podAffinityTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -457,14 +360,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-
                                     properties:
                                       matchExpressions:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -489,8 +389,6 @@ spec:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -527,7 +425,6 @@ spec:
                       type: object
                     claims:
                       items:
-                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
                         properties:
                           name:
                             type: string
@@ -539,7 +436,6 @@ spec:
                         - name
                       x-kubernetes-list-type: map
                     configMapInfo:
-                      description: the reference for cn configMap.
                       properties:
                         configMapName:
                           type: string
@@ -547,7 +443,6 @@ spec:
                           items:
                             properties:
                               configMapName:
-                                description: name of configmap that needs to mount.
                                 type: string
                               mountPath:
                                 type: string
@@ -557,25 +452,17 @@ spec:
                           type: string
                       type: object
                     containerSecurityContext:
-                      description: Security context for all containers running in the
-                        pod (unless they override it).
                       properties:
                         allowPrivilegeEscalation:
                           type: boolean
                         capabilities:
                           properties:
                             add:
-                              description: Added capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                             drop:
-                              description: Removed capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                           type: object
@@ -596,20 +483,12 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
@@ -645,13 +524,10 @@ spec:
                               configMapKeyRef:
                                 properties:
                                   key:
-                                    description: The key to select.
                                     type: string
                                   name:
                                     type: string
                                   optional:
-                                    description: Specify whether the ConfigMap or its
-                                      key must be defined
                                     type: boolean
                                 required:
                                   - key
@@ -678,7 +554,6 @@ spec:
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
                                   resource:
-                                    description: 'Required: resource to select'
                                     type: string
                                 required:
                                   - resource
@@ -687,8 +562,6 @@ spec:
                               secretKeyRef:
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.  Must
-                                      be a valid secret key.
                                     type: string
                                   name:
                                     type: string
@@ -704,20 +577,16 @@ spec:
                         type: object
                       type: array
                     feAddress:
-                      description: specify register fe addresses
                       properties:
                         ServiceName:
                           type: string
                         endpoints:
                           properties:
                             :address:
-                              description: the ip or domain array.
                               items:
                                 type: string
                               type: array
                             port:
-                              description: the fe port that for query. the field `query_port`
-                                defines in fe config.
                               type: integer
                           type: object
                       type: object
@@ -725,22 +594,17 @@ spec:
                       items:
                         properties:
                           hostnames:
-                            description: Hostnames for the above IP address.
                             items:
                               type: string
                             type: array
                           ip:
-                            description: IP address of the host file entry.
                             type: string
                         type: object
                       type: array
                     image:
-                      description: Image for a doris cn deployment.
                       type: string
                     imagePullSecrets:
                       items:
-                        description: LocalObjectReference contains enough information
-                          to let you locate the referenced object inside the same namespace.
                         properties:
                           name:
                             type: string
@@ -758,23 +622,15 @@ spec:
                     nodeSelector:
                       additionalProperties:
                         type: string
-                      description: (Optional) If specified, the pod's nodeSelector，displayName="Map
-                        of nodeSelectors to match when scheduling pods on nodes"
                       type: object
                     persistentVolumes:
                       items:
-                        description: PersistentVolume defines volume information and
-                          container mount information.
                         properties:
                           mountPath:
-                            description: the mount path for component service.
                             type: string
                           name:
-                            description: the volume name associate with
                             type: string
                           persistentVolumeClaimSpec:
-                            description: PersistentVolumeClaimSpec is a list of claim
-                              spec about storage that pods are required.
                             properties:
                               accessModes:
                                 items:
@@ -785,12 +641,8 @@ spec:
                                   apiGroup:
                                     type: string
                                   kind:
-                                    description: Kind is the type of resource being
-                                      referenced
                                     type: string
                                   name:
-                                    description: Name is the name of resource being
-                                      referenced
                                     type: string
                                 required:
                                   - kind
@@ -802,12 +654,8 @@ spec:
                                   apiGroup:
                                     type: string
                                   kind:
-                                    description: Kind is the type of resource being
-                                      referenced
                                     type: string
                                   name:
-                                    description: Name is the name of resource being
-                                      referenced
                                     type: string
                                   namespace:
                                     type: string
@@ -819,14 +667,8 @@ spec:
                                 properties:
                                   claims:
                                     items:
-                                      description: ResourceClaim references one entry
-                                        in PodSpec.ResourceClaims.
                                       properties:
                                         name:
-                                          description: Name must match the name of one
-                                            entry in pod.spec.resourceClaims of the
-                                            Pod where this field is used. It makes that
-                                            resource available inside a container.
                                           type: string
                                       required:
                                         - name
@@ -842,8 +684,6 @@ spec:
                                         - type: string
                                       pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                       x-kubernetes-int-or-string: true
-                                    description: 'Limits describes the maximum amount
-                                    of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                     type: object
                                   requests:
                                     additionalProperties:
@@ -855,22 +695,13 @@ spec:
                                     type: object
                                 type: object
                               selector:
-                                description: selector is a label query over volumes
-                                  to consider for binding.
                                 properties:
                                   matchExpressions:
-                                    description: matchExpressions is a list of label
-                                      selector requirements. The requirements are ANDed.
                                     items:
                                       properties:
                                         key:
-                                          description: key is the label key that the
-                                            selector applies to.
                                           type: string
                                         operator:
-                                          description: operator represents a key's relationship
-                                            to a set of values. Valid operators are
-                                            In, NotIn, Exists and DoesNotExist.
                                           type: string
                                         values:
                                           items:
@@ -888,31 +719,21 @@ spec:
                                 type: object
                                 x-kubernetes-map-type: atomic
                               storageClassName:
-                                description: 'storageClassName is the name of the StorageClass
-                                required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1'
                                 type: string
                               volumeMode:
-                                description: volumeMode defines what type of volume
-                                  is required by the claim. Value of Filesystem is implied
-                                  when not included in claim spec.
                                 type: string
                               volumeName:
-                                description: volumeName is the binding reference to
-                                  the PersistentVolume backing this claim.
                                 type: string
                             type: object
                           provisioner:
-                            description: defines pvc provisioner
                             type: string
                         type: object
                       type: array
                     podLabels:
                       additionalProperties:
                         type: string
-                      description: podLabels for user selector or classify pods
                       type: object
                     replicas:
-                      description: Replicas is the number of desired cn Pod.
                       format: int32
                       minimum: 0
                       type: integer
@@ -925,7 +746,6 @@ spec:
                         x-kubernetes-int-or-string: true
                       type: object
                     securityContext:
-                      description: Security context for pod.
                       properties:
                         fsGroup:
                           format: int64
@@ -943,26 +763,15 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
-                          description: The seccomp options to use by the containers
-                            in this pod. Note that this field cannot be set when spec.os.name
-                            is windows.
                           properties:
                             localhostProfile:
                               type: string
@@ -978,13 +787,10 @@ spec:
                           type: array
                         sysctls:
                           items:
-                            description: Sysctl defines a kernel parameter to be set
                             properties:
                               name:
-                                description: Name of a property to set
                                 type: string
                               value:
-                                description: Value of a property to set
                                 type: string
                             required:
                               - name
@@ -996,8 +802,6 @@ spec:
                             gmsaCredentialSpec:
                               type: string
                             gmsaCredentialSpecName:
-                              description: GMSACredentialSpecName is the name of the
-                                GMSA credential spec to use.
                               type: string
                             hostProcess:
                               type: boolean
@@ -1010,16 +814,11 @@ spec:
                         annotations:
                           additionalProperties:
                             type: string
-                          description: Annotations for using function on different cloud
-                            platform.
                           type: object
                         loadBalancerIP:
                           type: string
                         servicePorts:
-                          description: ServicePort config service for NodePort access
-                            mode.
                           items:
-                            description: DorisServicePort for ServiceType=NodePort situation.
                             properties:
                               nodePort:
                                 format: int32
@@ -1033,29 +832,21 @@ spec:
                           type: string
                       type: object
                     serviceAccount:
-                      description: serviceAccount for cn access cloud service.
                       type: string
                     systemInitialization:
-                      description: SystemInitialization for fe, be and cn setting system
-                        parameters.
                       properties:
                         args:
-                          description: Arguments to the entrypoint.
                           items:
                             type: string
                           type: array
                         command:
-                          description: Entrypoint array. Not executed within a shell.
                           items:
                             type: string
                           type: array
                         initImage:
-                          description: Image for doris initialization, default is selectdb/alpine:latest.
                           type: string
                       type: object
                     tolerations:
-                      description: (Optional) Tolerations for scheduling pods onto some
-                        dedicated nodes
                       items:
                         properties:
                           effect:
@@ -1075,30 +866,20 @@ spec:
                     - image
                   type: object
                 brokerSpec:
-                  description: defines the broker state that will be created by operator.
                   properties:
                     affinity:
-                      description: If specified, the pod's scheduling constraints.
                       properties:
                         nodeAffinity:
-                          description: Describes node affinity scheduling rules for
-                            the pod.
                           properties:
                             preferredDuringSchedulingIgnoredDuringExecution:
                               items:
                                 properties:
                                   preference:
-                                    description: A node selector term, associated with
-                                      the corresponding weight.
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1112,13 +893,9 @@ spec:
                                           type: object
                                         type: array
                                       matchFields:
-                                        description: A list of node selector requirements
-                                          by node's fields.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1144,18 +921,12 @@ spec:
                             requiredDuringSchedulingIgnoredDuringExecution:
                               properties:
                                 nodeSelectorTerms:
-                                  description: Required. A list of node selector terms.
-                                    The terms are ORed.
                                   items:
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1172,8 +943,6 @@ spec:
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1200,19 +969,13 @@ spec:
                               items:
                                 properties:
                                   podAffinityTerm:
-                                    description: Required. A pod affinity term, associated
-                                      with the corresponding weight.
                                     properties:
                                       labelSelector:
-                                        description: A label query over a set of resources,
-                                          in this case pods.
                                         properties:
                                           matchExpressions:
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -1237,8 +1000,6 @@ spec:
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -1267,8 +1028,6 @@ spec:
                                       - topologyKey
                                     type: object
                                   weight:
-                                    description: weight associated with matching the
-                                      corresponding podAffinityTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -1280,18 +1039,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-                                    description: A label query over a set of resources,
-                                      in this case pods.
                                     properties:
                                       matchExpressions:
-                                        description: matchExpressions is a list of label
-                                          selector requirements. The requirements are
-                                          ANDed.
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1316,8 +1068,6 @@ spec:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1381,18 +1131,9 @@ spec:
                                       namespaceSelector:
                                         properties:
                                           matchExpressions:
-                                            description: matchExpressions is a list
-                                              of label selector requirements. The requirements
-                                              are ANDed.
                                             items:
-                                              description: A label selector requirement
-                                                is a selector that contains values,
-                                                a key, and an operator that relates
-                                                the key and values.
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -1421,8 +1162,6 @@ spec:
                                       - topologyKey
                                     type: object
                                   weight:
-                                    description: weight associated with matching the
-                                      corresponding podAffinityTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -1434,15 +1173,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-                                    description: A label query over a set of resources,
-                                      in this case pods.
                                     properties:
                                       matchExpressions:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1464,14 +1199,9 @@ spec:
                                   namespaceSelector:
                                     properties:
                                       matchExpressions:
-                                        description: matchExpressions is a list of label
-                                          selector requirements. The requirements are
-                                          ANDed.
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -1505,12 +1235,9 @@ spec:
                     annotations:
                       additionalProperties:
                         type: string
-                      description: annotation for fe pods. user can config monitor annotation
-                        for collect to monitor system.
                       type: object
                     claims:
                       items:
-                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
                         properties:
                           name:
                             type: string
@@ -1522,7 +1249,6 @@ spec:
                         - name
                       x-kubernetes-list-type: map
                     configMapInfo:
-                      description: the reference for cn configMap.
                       properties:
                         configMapName:
                           type: string
@@ -1530,7 +1256,6 @@ spec:
                           items:
                             properties:
                               configMapName:
-                                description: name of configmap that needs to mount.
                                 type: string
                               mountPath:
                                 type: string
@@ -1546,17 +1271,11 @@ spec:
                         capabilities:
                           properties:
                             add:
-                              description: Added capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                             drop:
-                              description: Removed capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                           type: object
@@ -1577,20 +1296,12 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
@@ -1607,8 +1318,6 @@ spec:
                             gmsaCredentialSpec:
                               type: string
                             gmsaCredentialSpecName:
-                              description: GMSACredentialSpecName is the name of the
-                                GMSA credential spec to use.
                               type: string
                             hostProcess:
                               type: boolean
@@ -1617,31 +1326,21 @@ spec:
                           type: object
                       type: object
                     envVars:
-                      description: cnEnvVars is a slice of environment variables that
-                        are added to the pods, the default is empty.
                       items:
                         properties:
                           name:
-                            description: Name of the environment variable. Must be a
-                              C_IDENTIFIER.
                             type: string
                           value:
                             type: string
                           valueFrom:
-                            description: Source for the environment variable's value.
-                              Cannot be used if value is not empty.
                             properties:
                               configMapKeyRef:
-                                description: Selects a key of a ConfigMap.
                                 properties:
                                   key:
-                                    description: The key to select.
                                     type: string
                                   name:
                                     type: string
                                   optional:
-                                    description: Specify whether the ConfigMap or its
-                                      key must be defined
                                     type: boolean
                                 required:
                                   - key
@@ -1660,37 +1359,26 @@ spec:
                               resourceFieldRef:
                                 properties:
                                   containerName:
-                                    description: 'Container name: required for volumes,
-                                    optional for env vars'
                                     type: string
                                   divisor:
                                     anyOf:
                                       - type: integer
                                       - type: string
-                                    description: Specifies the output format of the
-                                      exposed resources, defaults to "1"
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
                                   resource:
-                                    description: 'Required: resource to select'
                                     type: string
                                 required:
                                   - resource
                                 type: object
                                 x-kubernetes-map-type: atomic
                               secretKeyRef:
-                                description: Selects a key of a secret in the pod's
-                                  namespace
                                 properties:
                                   key:
-                                    description: The key of the secret to select from.  Must
-                                      be a valid secret key.
                                     type: string
                                   name:
                                     type: string
                                   optional:
-                                    description: Specify whether the Secret or its key
-                                      must be defined
                                     type: boolean
                                 required:
                                   - key
@@ -1702,24 +1390,16 @@ spec:
                         type: object
                       type: array
                     feAddress:
-                      description: specify register fe addresses
                       properties:
                         ServiceName:
-                          description: the service name that proxy fe on k8s. the service
-                            must in same namespace with fe.
                           type: string
                         endpoints:
-                          description: the fe addresses if not deploy by crd, user can
-                            use k8s deploy fe observer.
                           properties:
                             :address:
-                              description: the ip or domain array.
                               items:
                                 type: string
                               type: array
                             port:
-                              description: the fe port that for query. the field `query_port`
-                                defines in fe config.
                               type: integer
                           type: object
                       type: object
@@ -1727,17 +1407,14 @@ spec:
                       items:
                         properties:
                           hostnames:
-                            description: Hostnames for the above IP address.
                             items:
                               type: string
                             type: array
                           ip:
-                            description: IP address of the host file entry.
                             type: string
                         type: object
                       type: array
                     image:
-                      description: Image for a doris cn deployment.
                       type: string
                     imagePullSecrets:
                       items:
@@ -1765,10 +1442,8 @@ spec:
                       items:
                         properties:
                           mountPath:
-                            description: the mount path for component service.
                             type: string
                           name:
-                            description: the volume name associate with
                             type: string
                           persistentVolumeClaimSpec:
                             properties:
@@ -1781,12 +1456,8 @@ spec:
                                   apiGroup:
                                     type: string
                                   kind:
-                                    description: Kind is the type of resource being
-                                      referenced
                                     type: string
                                   name:
-                                    description: Name is the name of resource being
-                                      referenced
                                     type: string
                                 required:
                                   - kind
@@ -1798,12 +1469,8 @@ spec:
                                   apiGroup:
                                     type: string
                                   kind:
-                                    description: Kind is the type of resource being
-                                      referenced
                                     type: string
                                   name:
-                                    description: Name is the name of resource being
-                                      referenced
                                     type: string
                                   namespace:
                                     type: string
@@ -1815,8 +1482,6 @@ spec:
                                 properties:
                                   claims:
                                     items:
-                                      description: ResourceClaim references one entry
-                                        in PodSpec.ResourceClaims.
                                       properties:
                                         name:
                                           type: string
@@ -1845,17 +1510,11 @@ spec:
                                     type: object
                                 type: object
                               selector:
-                                description: selector is a label query over volumes
-                                  to consider for binding.
                                 properties:
                                   matchExpressions:
-                                    description: matchExpressions is a list of label
-                                      selector requirements. The requirements are ANDed.
                                     items:
                                       properties:
                                         key:
-                                          description: key is the label key that the
-                                            selector applies to.
                                           type: string
                                         operator:
                                           type: string
@@ -1879,22 +1538,17 @@ spec:
                               volumeMode:
                                 type: string
                               volumeName:
-                                description: volumeName is the binding reference to
-                                  the PersistentVolume backing this claim.
                                 type: string
                             type: object
                           provisioner:
-                            description: defines pvc provisioner
                             type: string
                         type: object
                       type: array
                     podLabels:
                       additionalProperties:
                         type: string
-                      description: podLabels for user selector or classify pods
                       type: object
                     replicas:
-                      description: Replicas is the number of desired cn Pod.
                       format: int32
                       minimum: 0
                       type: integer
@@ -1907,7 +1561,6 @@ spec:
                         x-kubernetes-int-or-string: true
                       type: object
                     securityContext:
-                      description: Security context for pod.
                       properties:
                         fsGroup:
                           format: int64
@@ -1925,26 +1578,15 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
-                          description: The seccomp options to use by the containers
-                            in this pod. Note that this field cannot be set when spec.os.name
-                            is windows.
                           properties:
                             localhostProfile:
                               type: string
@@ -1960,13 +1602,10 @@ spec:
                           type: array
                         sysctls:
                           items:
-                            description: Sysctl defines a kernel parameter to be set
                             properties:
                               name:
-                                description: Name of a property to set
                                 type: string
                               value:
-                                description: Value of a property to set
                                 type: string
                             required:
                               - name
@@ -1978,8 +1617,6 @@ spec:
                             gmsaCredentialSpec:
                               type: string
                             gmsaCredentialSpecName:
-                              description: GMSACredentialSpecName is the name of the
-                                GMSA credential spec to use.
                               type: string
                             hostProcess:
                               type: boolean
@@ -1992,16 +1629,11 @@ spec:
                         annotations:
                           additionalProperties:
                             type: string
-                          description: Annotations for using function on different cloud
-                            platform.
                           type: object
                         loadBalancerIP:
                           type: string
                         servicePorts:
-                          description: ServicePort config service for NodePort access
-                            mode.
                           items:
-                            description: DorisServicePort for ServiceType=NodePort situation.
                             properties:
                               nodePort:
                                 format: int32
@@ -2015,29 +1647,21 @@ spec:
                           type: string
                       type: object
                     serviceAccount:
-                      description: serviceAccount for cn access cloud service.
                       type: string
                     systemInitialization:
-                      description: SystemInitialization for fe, be and cn setting system
-                        parameters.
                       properties:
                         args:
-                          description: Arguments to the entrypoint.
                           items:
                             type: string
                           type: array
                         command:
-                          description: Entrypoint array. Not executed within a shell.
                           items:
                             type: string
                           type: array
                         initImage:
-                          description: Image for doris initialization, default is selectdb/alpine:latest.
                           type: string
                       type: object
                     tolerations:
-                      description: (Optional) Tolerations for scheduling pods onto some
-                        dedicated nodes
                       items:
                         properties:
                           effect:
@@ -2057,31 +1681,20 @@ spec:
                     - image
                   type: object
                 cnSpec:
-                  description: defines the cn cluster state that will be created by
-                    operator.
                   properties:
                     affinity:
-                      description: If specified, the pod's scheduling constraints.
                       properties:
                         nodeAffinity:
-                          description: Describes node affinity scheduling rules for
-                            the pod.
                           properties:
                             preferredDuringSchedulingIgnoredDuringExecution:
                               items:
                                 properties:
                                   preference:
-                                    description: A node selector term, associated with
-                                      the corresponding weight.
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -2095,13 +1708,9 @@ spec:
                                           type: object
                                         type: array
                                       matchFields:
-                                        description: A list of node selector requirements
-                                          by node's fields.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -2117,8 +1726,6 @@ spec:
                                     type: object
                                     x-kubernetes-map-type: atomic
                                   weight:
-                                    description: Weight associated with matching the
-                                      corresponding nodeSelectorTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -2132,13 +1739,9 @@ spec:
                                   items:
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -2152,8 +1755,6 @@ spec:
                                           type: object
                                         type: array
                                       matchFields:
-                                        description: A list of node selector requirements
-                                          by node's fields.
                                         items:
                                           properties:
                                             key:
@@ -2183,19 +1784,13 @@ spec:
                               items:
                                 properties:
                                   podAffinityTerm:
-                                    description: Required. A pod affinity term, associated
-                                      with the corresponding weight.
                                     properties:
                                       labelSelector:
-                                        description: A label query over a set of resources,
-                                          in this case pods.
                                         properties:
                                           matchExpressions:
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -2220,8 +1815,6 @@ spec:
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -2250,8 +1843,6 @@ spec:
                                       - topologyKey
                                     type: object
                                   weight:
-                                    description: weight associated with matching the
-                                      corresponding podAffinityTerm, in the range 1-100.
                                     format: int32
                                     type: integer
                                 required:
@@ -2263,15 +1854,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-                                    description: A label query over a set of resources,
-                                      in this case pods.
                                     properties:
                                       matchExpressions:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -2296,8 +1883,6 @@ spec:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -2333,22 +1918,13 @@ spec:
                               items:
                                 properties:
                                   podAffinityTerm:
-                                    description: Required. A pod affinity term, associated
-                                      with the corresponding weight.
                                     properties:
                                       labelSelector:
-                                        description: A label query over a set of resources,
-                                          in this case pods.
                                         properties:
                                           matchExpressions:
-                                            description: matchExpressions is a list
-                                              of label selector requirements. The requirements
-                                              are ANDed.
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -2373,8 +1949,6 @@ spec:
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -2414,15 +1988,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-                                    description: A label query over a set of resources,
-                                      in this case pods.
                                     properties:
                                       matchExpressions:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -2482,7 +2052,6 @@ spec:
                         type: string
                       type: object
                     autoScalingPolicy:
-                      description: AutoScalingPolicy auto scaling strategy
                       properties:
                         hpaPolicy:
                           properties:
@@ -2545,16 +2114,10 @@ spec:
                                   containerResource:
                                     properties:
                                       container:
-                                        description: container is the name of the container
-                                          in the pods of the scaling target
                                         type: string
                                       name:
-                                        description: name is the name of the resource
-                                          in question.
                                         type: string
                                       target:
-                                        description: target specifies the target value
-                                          for the given metric
                                         properties:
                                           averageUtilization:
                                             format: int32
@@ -2645,7 +2208,6 @@ spec:
                                       describedObject:
                                         properties:
                                           apiVersion:
-                                            description: API version of the referent
                                             type: string
                                           kind:
                                             type: string
@@ -2703,8 +2265,6 @@ spec:
                                             anyOf:
                                               - type: integer
                                               - type: string
-                                            description: value is the target value of
-                                              the metric (as a quantity).
                                             pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                             x-kubernetes-int-or-string: true
                                         required:
@@ -2718,12 +2278,8 @@ spec:
                                   pods:
                                     properties:
                                       metric:
-                                        description: metric identifies the target metric
-                                          by name and selector
                                         properties:
                                           name:
-                                            description: name is the name of the given
-                                              metric
                                             type: string
                                           selector:
                                             properties:
@@ -2816,22 +2372,17 @@ spec:
                               type: array
                           type: object
                         maxReplicas:
-                          description: the max numbers of target.
                           format: int32
                           type: integer
                         minReplicas:
-                          description: the min numbers of target.
                           format: int32
                           type: integer
                         version:
                           default: v2
-                          description: version represents the autoscaler version for
-                            cn service. only support v1,,v2
                           type: string
                       type: object
                     claims:
                       items:
-                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
                         properties:
                           name:
                             type: string
@@ -2843,7 +2394,6 @@ spec:
                         - name
                       x-kubernetes-list-type: map
                     configMapInfo:
-                      description: the reference for cn configMap.
                       properties:
                         configMapName:
                           type: string
@@ -2851,7 +2401,6 @@ spec:
                           items:
                             properties:
                               configMapName:
-                                description: name of configmap that needs to mount.
                                 type: string
                               mountPath:
                                 type: string
@@ -2867,17 +2416,11 @@ spec:
                         capabilities:
                           properties:
                             add:
-                              description: Added capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                             drop:
-                              description: Removed capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                           type: object
@@ -2898,20 +2441,12 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
@@ -2945,10 +2480,8 @@ spec:
                           valueFrom:
                             properties:
                               configMapKeyRef:
-                                description: Selects a key of a ConfigMap.
                                 properties:
                                   key:
-                                    description: The key to select.
                                     type: string
                                   name:
                                     type: string
@@ -2976,12 +2509,9 @@ spec:
                                     anyOf:
                                       - type: integer
                                       - type: string
-                                    description: Specifies the output format of the
-                                      exposed resources, defaults to "1"
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
                                   resource:
-                                    description: 'Required: resource to select'
                                     type: string
                                 required:
                                   - resource
@@ -3011,7 +2541,6 @@ spec:
                         endpoints:
                           properties:
                             :address:
-                              description: the ip or domain array.
                               items:
                                 type: string
                               type: array
@@ -3023,22 +2552,17 @@ spec:
                       items:
                         properties:
                           hostnames:
-                            description: Hostnames for the above IP address.
                             items:
                               type: string
                             type: array
                           ip:
-                            description: IP address of the host file entry.
                             type: string
                         type: object
                       type: array
                     image:
-                      description: Image for a doris cn deployment.
                       type: string
                     imagePullSecrets:
                       items:
-                        description: LocalObjectReference contains enough information
-                          to let you locate the referenced object inside the same namespace.
                         properties:
                           name:
                             type: string
@@ -3061,14 +2585,10 @@ spec:
                       items:
                         properties:
                           mountPath:
-                            description: the mount path for component service.
                             type: string
                           name:
-                            description: the volume name associate with
                             type: string
                           persistentVolumeClaimSpec:
-                            description: PersistentVolumeClaimSpec is a list of claim
-                              spec about storage that pods are required.
                             properties:
                               accessModes:
                                 items:
@@ -3079,12 +2599,8 @@ spec:
                                   apiGroup:
                                     type: string
                                   kind:
-                                    description: Kind is the type of resource being
-                                      referenced
                                     type: string
                                   name:
-                                    description: Name is the name of resource being
-                                      referenced
                                     type: string
                                 required:
                                   - kind
@@ -3096,12 +2612,8 @@ spec:
                                   apiGroup:
                                     type: string
                                   kind:
-                                    description: Kind is the type of resource being
-                                      referenced
                                     type: string
                                   name:
-                                    description: Name is the name of resource being
-                                      referenced
                                     type: string
                                   namespace:
                                     type: string
@@ -3113,8 +2625,6 @@ spec:
                                 properties:
                                   claims:
                                     items:
-                                      description: ResourceClaim references one entry
-                                        in PodSpec.ResourceClaims.
                                       properties:
                                         name:
                                           type: string
@@ -3143,25 +2653,13 @@ spec:
                                     type: object
                                 type: object
                               selector:
-                                description: selector is a label query over volumes
-                                  to consider for binding.
                                 properties:
                                   matchExpressions:
-                                    description: matchExpressions is a list of label
-                                      selector requirements. The requirements are ANDed.
                                     items:
-                                      description: A label selector requirement is a
-                                        selector that contains values, a key, and an
-                                        operator that relates the key and values.
                                       properties:
                                         key:
-                                          description: key is the label key that the
-                                            selector applies to.
                                           type: string
                                         operator:
-                                          description: operator represents a key's relationship
-                                            to a set of values. Valid operators are
-                                            In, NotIn, Exists and DoesNotExist.
                                           type: string
                                         values:
                                           items:
@@ -3183,22 +2681,17 @@ spec:
                               volumeMode:
                                 type: string
                               volumeName:
-                                description: volumeName is the binding reference to
-                                  the PersistentVolume backing this claim.
                                 type: string
                             type: object
                           provisioner:
-                            description: defines pvc provisioner
                             type: string
                         type: object
                       type: array
                     podLabels:
                       additionalProperties:
                         type: string
-                      description: podLabels for user selector or classify pods
                       type: object
                     replicas:
-                      description: Replicas is the number of desired cn Pod.
                       format: int32
                       minimum: 0
                       type: integer
@@ -3211,7 +2704,6 @@ spec:
                         x-kubernetes-int-or-string: true
                       type: object
                     securityContext:
-                      description: Security context for pod.
                       properties:
                         fsGroup:
                           format: int64
@@ -3229,20 +2721,12 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
@@ -3261,13 +2745,10 @@ spec:
                           type: array
                         sysctls:
                           items:
-                            description: Sysctl defines a kernel parameter to be set
                             properties:
                               name:
-                                description: Name of a property to set
                                 type: string
                               value:
-                                description: Value of a property to set
                                 type: string
                             required:
                               - name
@@ -3279,8 +2760,6 @@ spec:
                             gmsaCredentialSpec:
                               type: string
                             gmsaCredentialSpecName:
-                              description: GMSACredentialSpecName is the name of the
-                                GMSA credential spec to use.
                               type: string
                             hostProcess:
                               type: boolean
@@ -3293,16 +2772,11 @@ spec:
                         annotations:
                           additionalProperties:
                             type: string
-                          description: Annotations for using function on different cloud
-                            platform.
                           type: object
                         loadBalancerIP:
                           type: string
                         servicePorts:
-                          description: ServicePort config service for NodePort access
-                            mode.
                           items:
-                            description: DorisServicePort for ServiceType=NodePort situation.
                             properties:
                               nodePort:
                                 format: int32
@@ -3316,24 +2790,18 @@ spec:
                           type: string
                       type: object
                     serviceAccount:
-                      description: serviceAccount for cn access cloud service.
                       type: string
                     systemInitialization:
-                      description: SystemInitialization for fe, be and cn setting system
-                        parameters.
                       properties:
                         args:
-                          description: Arguments to the entrypoint.
                           items:
                             type: string
                           type: array
                         command:
-                          description: Entrypoint array. Not executed within a shell.
                           items:
                             type: string
                           type: array
                         initImage:
-                          description: Image for doris initialization, default is selectdb/alpine:latest.
                           type: string
                       type: object
                     tolerations:
@@ -3358,27 +2826,18 @@ spec:
                 feSpec:
                   properties:
                     affinity:
-                      description: If specified, the pod's scheduling constraints.
                       properties:
                         nodeAffinity:
-                          description: Describes node affinity scheduling rules for
-                            the pod.
                           properties:
                             preferredDuringSchedulingIgnoredDuringExecution:
                               items:
                                 properties:
                                   preference:
-                                    description: A node selector term, associated with
-                                      the corresponding weight.
                                     properties:
                                       matchExpressions:
-                                        description: A list of node selector requirements
-                                          by node's labels.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -3392,13 +2851,9 @@ spec:
                                           type: object
                                         type: array
                                       matchFields:
-                                        description: A list of node selector requirements
-                                          by node's fields.
                                         items:
                                           properties:
                                             key:
-                                              description: The label key that the selector
-                                                applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -3443,8 +2898,6 @@ spec:
                                           type: object
                                         type: array
                                       matchFields:
-                                        description: A list of node selector requirements
-                                          by node's fields.
                                         items:
                                           properties:
                                             key:
@@ -3474,22 +2927,13 @@ spec:
                               items:
                                 properties:
                                   podAffinityTerm:
-                                    description: Required. A pod affinity term, associated
-                                      with the corresponding weight.
                                     properties:
                                       labelSelector:
-                                        description: A label query over a set of resources,
-                                          in this case pods.
                                         properties:
                                           matchExpressions:
-                                            description: matchExpressions is a list
-                                              of label selector requirements. The requirements
-                                              are ANDed.
                                             items:
                                               properties:
                                                 key:
-                                                  description: key is the label key
-                                                    that the selector applies to.
                                                   type: string
                                                 operator:
                                                   type: string
@@ -3553,18 +2997,11 @@ spec:
                               items:
                                 properties:
                                   labelSelector:
-                                    description: A label query over a set of resources,
-                                      in this case pods.
                                     properties:
                                       matchExpressions:
-                                        description: matchExpressions is a list of label
-                                          selector requirements. The requirements are
-                                          ANDed.
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -3589,8 +3026,6 @@ spec:
                                         items:
                                           properties:
                                             key:
-                                              description: key is the label key that
-                                                the selector applies to.
                                               type: string
                                             operator:
                                               type: string
@@ -3761,7 +3196,6 @@ spec:
                       type: object
                     claims:
                       items:
-                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
                         properties:
                           name:
                             type: string
@@ -3773,7 +3207,6 @@ spec:
                         - name
                       x-kubernetes-list-type: map
                     configMapInfo:
-                      description: the reference for cn configMap.
                       properties:
                         configMapName:
                           type: string
@@ -3781,7 +3214,6 @@ spec:
                           items:
                             properties:
                               configMapName:
-                                description: name of configmap that needs to mount.
                                 type: string
                               mountPath:
                                 type: string
@@ -3797,14 +3229,10 @@ spec:
                         capabilities:
                           properties:
                             add:
-                              description: Added capabilities
                               items:
-                                description: Capability represent POSIX capabilities
-                                  type
                                 type: string
                               type: array
                             drop:
-                              description: Removed capabilities
                               items:
                                 type: string
                               type: array
@@ -3868,10 +3296,8 @@ spec:
                           valueFrom:
                             properties:
                               configMapKeyRef:
-                                description: Selects a key of a ConfigMap.
                                 properties:
                                   key:
-                                    description: The key to select.
                                     type: string
                                   name:
                                     type: string
@@ -3902,7 +3328,6 @@ spec:
                                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
                                   resource:
-                                    description: 'Required: resource to select'
                                     type: string
                                 required:
                                   - resource
@@ -3915,8 +3340,6 @@ spec:
                                   name:
                                     type: string
                                   optional:
-                                    description: Specify whether the Secret or its key
-                                      must be defined
                                     type: boolean
                                 required:
                                   - key
@@ -3928,14 +3351,12 @@ spec:
                         type: object
                       type: array
                     feAddress:
-                      description: specify register fe addresses
                       properties:
                         ServiceName:
                           type: string
                         endpoints:
                           properties:
                             :address:
-                              description: the ip or domain array.
                               items:
                                 type: string
                               type: array
@@ -3945,21 +3366,16 @@ spec:
                       type: object
                     hostAliases:
                       items:
-                        description: HostAlias holds the mapping between IP and hostnames
-                          that will be injected as an entry in the pod's hosts file.
                         properties:
                           hostnames:
-                            description: Hostnames for the above IP address.
                             items:
                               type: string
                             type: array
                           ip:
-                            description: IP address of the host file entry.
                             type: string
                         type: object
                       type: array
                     image:
-                      description: Image for a doris cn deployment.
                       type: string
                     imagePullSecrets:
                       items:
@@ -3983,14 +3399,10 @@ spec:
                       type: object
                     persistentVolumes:
                       items:
-                        description: PersistentVolume defines volume information and
-                          container mount information.
                         properties:
                           mountPath:
-                            description: the mount path for component service.
                             type: string
                           name:
-                            description: the volume name associate with
                             type: string
                           persistentVolumeClaimSpec:
                             properties:
@@ -4057,17 +3469,11 @@ spec:
                                     type: object
                                 type: object
                               selector:
-                                description: selector is a label query over volumes
-                                  to consider for binding.
                                 properties:
                                   matchExpressions:
-                                    description: matchExpressions is a list of label
-                                      selector requirements. The requirements are ANDed.
                                     items:
                                       properties:
                                         key:
-                                          description: key is the label key that the
-                                            selector applies to.
                                           type: string
                                         operator:
                                           type: string
@@ -4087,28 +3493,21 @@ spec:
                                 type: object
                                 x-kubernetes-map-type: atomic
                               storageClassName:
-                                description: 'storageClassName is the name of the StorageClass
-                                required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1'
                                 type: string
                               volumeMode:
                                 type: string
                               volumeName:
-                                description: volumeName is the binding reference to
-                                  the PersistentVolume backing this claim.
                                 type: string
                             type: object
                           provisioner:
-                            description: defines pvc provisioner
                             type: string
                         type: object
                       type: array
                     podLabels:
                       additionalProperties:
                         type: string
-                      description: podLabels for user selector or classify pods
                       type: object
                     replicas:
-                      description: Replicas is the number of desired cn Pod.
                       format: int32
                       minimum: 0
                       type: integer
@@ -4121,7 +3520,6 @@ spec:
                         x-kubernetes-int-or-string: true
                       type: object
                     securityContext:
-                      description: Security context for pod.
                       properties:
                         fsGroup:
                           format: int64
@@ -4139,20 +3537,12 @@ spec:
                         seLinuxOptions:
                           properties:
                             level:
-                              description: Level is SELinux level label that applies
-                                to the container.
                               type: string
                             role:
-                              description: Role is a SELinux role label that applies
-                                to the container.
                               type: string
                             type:
-                              description: Type is a SELinux type label that applies
-                                to the container.
                               type: string
                             user:
-                              description: User is a SELinux user label that applies
-                                to the container.
                               type: string
                           type: object
                         seccompProfile:
@@ -4171,13 +3561,10 @@ spec:
                           type: array
                         sysctls:
                           items:
-                            description: Sysctl defines a kernel parameter to be set
                             properties:
                               name:
-                                description: Name of a property to set
                                 type: string
                               value:
-                                description: Value of a property to set
                                 type: string
                             required:
                               - name
@@ -4189,8 +3576,6 @@ spec:
                             gmsaCredentialSpec:
                               type: string
                             gmsaCredentialSpecName:
-                              description: GMSACredentialSpecName is the name of the
-                                GMSA credential spec to use.
                               type: string
                             hostProcess:
                               type: boolean
@@ -4203,16 +3588,11 @@ spec:
                         annotations:
                           additionalProperties:
                             type: string
-                          description: Annotations for using function on different cloud
-                            platform.
                           type: object
                         loadBalancerIP:
                           type: string
                         servicePorts:
-                          description: ServicePort config service for NodePort access
-                            mode.
                           items:
-                            description: DorisServicePort for ServiceType=NodePort situation.
                             properties:
                               nodePort:
                                 format: int32
@@ -4226,29 +3606,21 @@ spec:
                           type: string
                       type: object
                     serviceAccount:
-                      description: serviceAccount for cn access cloud service.
                       type: string
                     systemInitialization:
-                      description: SystemInitialization for fe, be and cn setting system
-                        parameters.
                       properties:
                         args:
-                          description: Arguments to the entrypoint.
                           items:
                             type: string
                           type: array
                         command:
-                          description: Entrypoint array. Not executed within a shell.
                           items:
                             type: string
                           type: array
                         initImage:
-                          description: Image for doris initialization, default is selectdb/alpine:latest.
                           type: string
                       type: object
                     tolerations:
-                      description: (Optional) Tolerations for scheduling pods onto some
-                        dedicated nodes
                       items:
                         properties:
                           effect:
@@ -4269,31 +3641,21 @@ spec:
                   type: object
               type: object
             status:
-              description: DorisClusterStatus defines the observed state of DorisCluster
               properties:
                 beStatus:
-                  description: describe be cluster status, recode running, creating
-                    and failed pods.
                   properties:
                     accessService:
-                      description: DorisComponentStatus represents the status of a doris
-                        component. the name of fe service exposed for user.
                       type: string
                     componentCondition:
                       properties:
                         lastTransitionTime:
-                          description: The last time this condition was updated.
                           format: date-time
                           type: string
                         message:
-                          description: A human readable message indicating details about
-                            the transition.
                           type: string
                         phase:
-                          description: Phase of statefulset condition.
                           type: string
                         reason:
-                          description: The reason for the condition's last transition.
                           type: string
                         subResourceName:
                           type: string
@@ -4304,17 +3666,14 @@ spec:
                         - reason
                       type: object
                     creatingInstances:
-                      description: CreatingInstances in creating pod names.
                       items:
                         type: string
                       type: array
                     failedInstances:
-                      description: FailedInstances failed pod names.
                       items:
                         type: string
                       type: array
                     runningInstances:
-                      description: RunningInstances in running status pod names.
                       items:
                         type: string
                       type: array
@@ -4322,28 +3681,19 @@ spec:
                     - componentCondition
                   type: object
                 brokerStatus:
-                  description: describe broker cluster status, record running, creating
-                    and failed pods.
                   properties:
                     accessService:
-                      description: DorisComponentStatus represents the status of a doris
-                        component. the name of fe service exposed for user.
                       type: string
                     componentCondition:
                       properties:
                         lastTransitionTime:
-                          description: The last time this condition was updated.
                           format: date-time
                           type: string
                         message:
-                          description: A human readable message indicating details about
-                            the transition.
                           type: string
                         phase:
-                          description: Phase of statefulset condition.
                           type: string
                         reason:
-                          description: The reason for the condition's last transition.
                           type: string
                         subResourceName:
                           type: string
@@ -4354,17 +3704,14 @@ spec:
                         - reason
                       type: object
                     creatingInstances:
-                      description: CreatingInstances in creating pod names.
                       items:
                         type: string
                       type: array
                     failedInstances:
-                      description: FailedInstances failed pod names.
                       items:
                         type: string
                       type: array
                     runningInstances:
-                      description: RunningInstances in running status pod names.
                       items:
                         type: string
                       type: array
@@ -4372,28 +3719,19 @@ spec:
                     - componentCondition
                   type: object
                 cnStatus:
-                  description: describe cn cluster status, record running, creating
-                    and failed pods.
                   properties:
                     accessService:
-                      description: DorisComponentStatus represents the status of a doris
-                        component. the name of fe service exposed for user.
                       type: string
                     componentCondition:
                       properties:
                         lastTransitionTime:
-                          description: The last time this condition was updated.
                           format: date-time
                           type: string
                         message:
-                          description: A human readable message indicating details about
-                            the transition.
                           type: string
                         phase:
-                          description: Phase of statefulset condition.
                           type: string
                         reason:
-                          description: The reason for the condition's last transition.
                           type: string
                         subResourceName:
                           type: string
@@ -4404,27 +3742,21 @@ spec:
                         - reason
                       type: object
                     creatingInstances:
-                      description: CreatingInstances in creating pod names.
                       items:
                         type: string
                       type: array
                     failedInstances:
-                      description: FailedInstances failed pod names.
                       items:
                         type: string
                       type: array
                     horizontalScaler:
-                      description: HorizontalAutoscaler have the autoscaler information.
                       properties:
                         name:
-                          description: the deploy horizontal scaler name
                           type: string
                         version:
-                          description: the deploy horizontal version.
                           type: string
                       type: object
                     runningInstances:
-                      description: RunningInstances in running status pod names.
                       items:
                         type: string
                       type: array
@@ -4432,28 +3764,19 @@ spec:
                     - componentCondition
                   type: object
                 feStatus:
-                  description: describe fe cluster status, record running, creating
-                    and failed pods.
                   properties:
                     accessService:
-                      description: DorisComponentStatus represents the status of a doris
-                        component. the name of fe service exposed for user.
                       type: string
                     componentCondition:
                       properties:
                         lastTransitionTime:
-                          description: The last time this condition was updated.
                           format: date-time
                           type: string
                         message:
-                          description: A human readable message indicating details about
-                            the transition.
                           type: string
                         phase:
-                          description: Phase of statefulset condition.
                           type: string
                         reason:
-                          description: The reason for the condition's last transition.
                           type: string
                         subResourceName:
                           type: string
@@ -4464,17 +3787,14 @@ spec:
                         - reason
                       type: object
                     creatingInstances:
-                      description: CreatingInstances in creating pod names.
                       items:
                         type: string
                       type: array
                     failedInstances:
-                      description: FailedInstances failed pod names.
                       items:
                         type: string
                       type: array
                     runningInstances:
-                      description: RunningInstances in running status pod names.
                       items:
                         type: string
                       type: array

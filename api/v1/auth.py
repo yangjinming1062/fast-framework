@@ -29,7 +29,7 @@ async def login(data: LoginRequest = Body()) -> LoginResponse:
             if data.password == SecretManager.decrypt(user.password):
                 return LoginResponse(
                     username=user.username,
-                    role=user.role,
+                    identify=user.identify,
                     access_token=_create_token(identity=user.id),
                 )
         raise APIException(403, APICode.AUTH_FAILED)

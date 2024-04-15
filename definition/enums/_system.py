@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class APICode(Enum):
@@ -14,6 +14,23 @@ class APICode(Enum):
     INVALID_TOKEN = "0401", "无效的认证信息"
     UN_SUPPORT = "0403", "不支持的操作"
     AUTH_FAILED = "0403", "用户名或密码错误"
+
+
+class FilterTypeEnum(Enum):
+    """
+    参数过滤类型
+    """
+
+    Like = auto()
+    Datetime = auto()
+    In = auto()
+    NotIn = auto()
+    Equal = auto()
+    NotEqual = auto()
+    GreaterThan = auto()
+    GreaterThanOrEqual = auto()
+    LessThan = auto()
+    LessThanOrEqual = auto()
 
 
 class UserIdentifyEnum(Enum):

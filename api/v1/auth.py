@@ -19,7 +19,7 @@ def _create_token(identity):
     """
     expire = datetime.utcnow() + timedelta(days=CONFIG.jwt_token_expire_days)
     to_encode = {"uid": identity, "exp": expire}
-    return jwt.encode(to_encode, CONFIG.jwt_secret, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, CONFIG.jwt_secret, algorithm=CONSTANTS.JWT_ALGORITHM)
 
 
 @router.post("/login", summary="登录接口")

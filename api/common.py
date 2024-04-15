@@ -197,32 +197,50 @@ def _add_filter(column, value, op_type):
     Args:
         column (Column): 要查询的列。
         value (Any): 查询参数。
-        op_type (str): 操作类型。
+        op_type (FilterTypeEnum | str): 操作类型。
 
     Returns:
         ColumnElement | None:
     """
 
     if value is not None:
-        if op_type == "like":
+        if op_type == FilterTypeEnum.Like:
             if isinstance(value, list):
                 # like也可以用于列表：以或的关系
                 return or_(*[column.like(f"%{x}%") for x in value])
             else:
                 # 使用like运算符
                 return column.like(f"%{value}%")
-        elif op_type == "in":
+        elif op_type == FilterTypeEnum.In:
             # in运算符
             return column.in_(value)
-        elif op_type == "notin":
+        elif op_type == FilterTypeEnum.NotIn:
             # notin运算符
             return column.notin_(value)
-        elif op_type == "datetime":
+        elif op_type == FilterTypeEnum.NotIn:
             # 添加时间过滤参数：这个地方可以根据情况调整
             assert isinstance(value, DateFilterSchema), "value must be a DateFilterSchema"
             return column.between(value.started_at, value.ended_at)
+        elif op_type == FilterTypeEnum.Equal:
+            # 添加等于条件
+            return column == value
+        elif op_type == FilterTypeEnum.NotEqual:
+            # 添加不等于条件
+            return column != value
+        elif op_type == FilterTypeEnum.GreaterThan:
+            # 添加大于条件
+            return column > value
+        elif op_type == FilterTypeEnum.GreaterThanOrEqual:
+            # 添加大于等于条件
+            return column >= value
+        elif op_type == FilterTypeEnum.LessThan:
+            # 添加小于条件
+            return column < value
+        elif op_type == FilterTypeEnum.LessThanOrEqual:
+            # 添加小于等于条件
+            return column <= value
         else:
-            # 其他类似于==,>,<等这种运算符直接添加
+            # 其他直接添加运算符的情况
             return eval(f"column {op_type} value")
 
 
@@ -233,7 +251,7 @@ def add_filter(sql, query, columns):
     Args:
         sql (Select): SQLAlchemy SQL语句对象。
         query (dict): 过滤参数
-        columns (dict[Column, str]): 要查询的列。
+        columns (dict[Column, FilterTypeEnum]): 要查询的列。
 
     Returns:
         添加了where条件的SQL对象。

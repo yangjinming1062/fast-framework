@@ -40,8 +40,7 @@ if CONFIG.log_dir or CONFIG.log_stdout:
             {
                 "sink": os.path.join(CONFIG.log_dir, CONFIG.log_error_name),
                 "format": CONFIG.log_format,
-                "filter": lambda _x: _x["level"].name
-                in ["WARNING", "ERROR", "CRITICAL"],
+                "filter": lambda _x: _x["level"].name in ["WARNING", "ERROR", "CRITICAL"],
                 "level": "WARNING",
                 "rotation": CONFIG.log_rotation,
                 "retention": CONFIG.log_retention,

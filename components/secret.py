@@ -9,7 +9,6 @@ Description : 加解密实现
 from cryptography.fernet import Fernet
 
 from config import CONFIG
-
 from .functions import bytes_to_str
 from .functions import str_to_bytes
 

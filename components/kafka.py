@@ -97,18 +97,12 @@ class KafkaManager:
             if limit:
                 # 批量消费
                 while True:
-                    if msgs := consumer.consume(
-                        num_messages=limit, timeout=CONFIG.kafka_consumer_timeout
-                    ):
+                    if msgs := consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout):
                         offset = msgs[0].offset()
                         partition_id = msgs[0].partition()
                         topic = msgs[0].topic()
                         logger.debug(f"{topic=}:{partition_id=}, {offset=}")
-                        yield (
-                            [load(x) for x in msgs if x]
-                            if need_load
-                            else [x.value() for x in msgs if x]
-                        )
+                        yield ([load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x])
             else:
                 # 持续轮询，返回收到的第一条非空消息
                 while True:

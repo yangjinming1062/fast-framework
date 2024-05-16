@@ -4,12 +4,11 @@ from components import *
 from definitions import *
 
 
-def init_user(account, username, password):
+def init_user(username, password):
     """
     添加初始用户。
 
     Args:
-        account (str): 账号。
         username (str): 用户名。
         password (str): 密码。
 
@@ -17,18 +16,15 @@ def init_user(account, username, password):
         None
     """
     with DatabaseManager() as db:
-        uid = generate_key(account)  # 保证多环境管理员的id一致
+        uid = generate_key(username)  # 保证多环境管理员的id一致
         user = db.get(User, uid) or User()
         user.id = uid
-        user.account = account
         user.username = username
         user.password = generate_key(password)
         user.identify = UserIdentifyEnum.ADMIN
         user.phone = "-"
         user.email = "-"
-        user.updated_at = datetime.now()
         db.add(user)
-        print("Success!")
 
 
 def init_database():
@@ -47,11 +43,6 @@ def main():
     parser.add_argument("command", help="命令")
     # 添加选项参数
     parser.add_argument(
-        "--account",
-        default="admin",
-        help="初始账号",
-    )
-    parser.add_argument(
         "--username",
         default="默认管理员",
         help="初始用户名",
@@ -66,7 +57,7 @@ def main():
 
     # 处理命令
     if args.command == "user":
-        init_user(args.account, args.username, args.password)
+        init_user(args.username, args.password)
     elif args.command == "init":
         init_database()
     else:

@@ -1,3 +1,3 @@
 from .enums import *
-from .model import *
+from .models import *
 from .schema import *

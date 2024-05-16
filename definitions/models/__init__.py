@@ -16,5 +16,5 @@ _base = [
 
 ModelsDict = {x.__name__: x for x in ModelBase.__subclasses__()}
 
-# 限制 from model import * 时导入的内容
+# 限制 from models import * 时导入的内容
 __all__ = _base + list(ModelsDict.keys())

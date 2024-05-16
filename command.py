@@ -1,7 +1,7 @@
 import argparse
 
-from component import *
-from definition import *
+from components import *
+from definitions import *
 
 
 def init_user(account, username, password):
@@ -23,7 +23,7 @@ def init_user(account, username, password):
         user.account = account
         user.username = username
         user.password = generate_key(password)
-        user.identify = UserIdentifyEnum.Admin
+        user.identify = UserIdentifyEnum.ADMIN
         user.phone = "-"
         user.email = "-"
         user.updated_at = datetime.now()

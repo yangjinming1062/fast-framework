@@ -14,7 +14,7 @@ class BaseSchema(BaseModel):
         from_attributes = True
 
 
-class DateFilterSchema(BaseSchema):
+class DateFilterSchema(BaseModel):
     """
     时间过滤参数
     """
@@ -23,7 +23,7 @@ class DateFilterSchema(BaseSchema):
     ended_at: datetime
 
 
-class PaginateRequest(BaseSchema):
+class PaginateRequest(BaseModel):
     """
     分页类请求共同参数定义
     """
@@ -35,10 +35,12 @@ class PaginateRequest(BaseSchema):
     key: list[str] | None = Field(None, title="按ID导出时的ID列表")
 
 
-class PaginateResponse(BaseSchema):
+class PaginateResponse(BaseModel):
     """
     分页类响应共同参数定义
     """
 
+    page: int
+    size: int
     total: int = Field(default=0, title="总数")
     data: list

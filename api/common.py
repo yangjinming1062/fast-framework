@@ -11,20 +11,20 @@ from io import StringIO
 
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from jose import jwt
 from sqlalchemy import Column
 from sqlalchemy import func
-from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from component import *
+from components import *
 from config import *
-from definition import *
+from definitions import *
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -44,33 +44,31 @@ async def get_user(token: str = Depends(OAUTH2_SCHEME)):
         if uid := payload.get("uid"):
             with DatabaseManager() as db:
                 if user := db.get(User, uid):
+                    if user.status == UserStatusEnum.FORBIDDEN:
+                        raise HTTPException(403, "账号已被禁用, 请联系管理员")
                     db.expunge(user)
                     return user
                 else:
-                    raise APIException(404, APICode.NO_DATA)
+                    raise HTTPException(403, "用户不存在")
         else:
-            raise APIException(401, APICode.INVALID_TOKEN)
+            raise HTTPException(401, "无效的token")
     except JWTError:
-        raise APIException(401, APICode.INVALID_TOKEN)
+        raise HTTPException(401, "无效的token")
 
 
-def get_router(path, name, skip_auth=False):
+def get_router(path, name):
     """
     使用给定的路径和名称为API生成一个路由器。
 
     Args:
         path (str): 路由的路径。
         name (str): 路由的名称。
-        skip_auth (bool): 是否跳过鉴权。
 
     Returns:
         APIRouter: FastAPI的路由。
     """
     url_prefix = f'/{path.replace(".", "/")}'
-    if skip_auth:
-        return APIRouter(prefix=url_prefix, tags=[name])
-    else:
-        return APIRouter(prefix=url_prefix, tags=[name], dependencies=[Depends(get_user)])
+    return APIRouter(prefix=url_prefix, tags=[name])
 
 
 def create_instance(instance, error_msg=None) -> str:
@@ -91,43 +89,16 @@ def create_instance(instance, error_msg=None) -> str:
             return instance.id
     except IntegrityError as ex:
         logger.debug(ex)
-        raise APIException(422, APICode.CREATE, error_msg)
+        raise HTTPException(422, error_msg)
 
 
-def update_instance(cls, instance_id, params, error_msg=None):
-    """
-    更新ORM数据。
-
-    Args:
-        cls: ORM类定义。
-        instance_id (str): 数据的ID。
-        params (dict): 更新参数。
-        error_msg (str): 更新失败时的错误消息。
-
-    Returns:
-        None
-    """
-    with DatabaseManager() as db:
-        if item := db.get(cls, instance_id):
-            try:
-                for key, value in params.items():
-                    if value is not None:
-                        setattr(item, key, value)
-                db.commit()
-            except IntegrityError as ex:
-                logger.debug(ex)
-                raise APIException(422, APICode.UPDATE, error_msg)
-        else:
-            raise APIException(404, APICode.QUERY)
-
-
-def orm_delete(cls, data):
+def delete_instance(cls, data):
     """
     删除数据实例。
 
     Args:
         cls: ORM类定义。
-        data (List[str]): 待删除的数据ID列表。
+        data (list[str] | str): 待删除的数据ID列表。
 
     Returns:
         None
@@ -135,12 +106,15 @@ def orm_delete(cls, data):
 
     try:
         with DatabaseManager() as db:
-            # 通过delete方法删除实例数据可以在有关联关系时删除级联的子数据
-            for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
+            if isinstance(data, str):
+                instance = db.get(cls, data)
                 db.delete(instance)
+            else:
+                for instance in db.scalars(select(cls).where(cls.id.in_(data))).all():
+                    db.delete(instance)
     except Exception as ex:
         logger.exception(ex)
-        raise APIException(400, APICode.DELETE, str(ex))
+        raise HTTPException(400, str(ex))
 
 
 def paginate_query(sql, paginate, resp_schema, id_column, format_func=None, session=None):
@@ -190,79 +164,6 @@ def paginate_query(sql, paginate, resp_schema, id_column, format_func=None, sess
         return download_file(result.data, resp_schema.__doc__.strip()) if paginate.export else result
 
 
-def _add_filter(column, value, op_type):
-    """
-    向SQL对象添加查询条件。
-
-    Args:
-        column (Column): 要查询的列。
-        value (Any): 查询参数。
-        op_type (FilterTypeEnum | str): 操作类型。
-
-    Returns:
-        ColumnElement | None:
-    """
-
-    if value is not None:
-        if op_type == FilterTypeEnum.Like:
-            if isinstance(value, list):
-                # like也可以用于列表：以或的关系
-                return or_(*[column.like(f"%{x}%") for x in value])
-            else:
-                # 使用like运算符
-                return column.like(f"%{value}%")
-        elif op_type == FilterTypeEnum.In:
-            # in运算符
-            return column.in_(value)
-        elif op_type == FilterTypeEnum.NotIn:
-            # notin运算符
-            return column.notin_(value)
-        elif op_type == FilterTypeEnum.NotIn:
-            # 添加时间过滤参数：这个地方可以根据情况调整
-            assert isinstance(value, DateFilterSchema), "value must be a DateFilterSchema"
-            return column.between(value.started_at, value.ended_at)
-        elif op_type == FilterTypeEnum.Equal:
-            # 添加等于条件
-            return column == value
-        elif op_type == FilterTypeEnum.NotEqual:
-            # 添加不等于条件
-            return column != value
-        elif op_type == FilterTypeEnum.GreaterThan:
-            # 添加大于条件
-            return column > value
-        elif op_type == FilterTypeEnum.GreaterThanOrEqual:
-            # 添加大于等于条件
-            return column >= value
-        elif op_type == FilterTypeEnum.LessThan:
-            # 添加小于条件
-            return column < value
-        elif op_type == FilterTypeEnum.LessThanOrEqual:
-            # 添加小于等于条件
-            return column <= value
-        else:
-            # 其他直接添加运算符的情况
-            return eval(f"column {op_type} value")
-
-
-def add_filter(sql, query, columns):
-    """
-    向SQL对象添加查询条件。
-
-    Args:
-        sql (Select): SQLAlchemy SQL语句对象。
-        query (dict): 过滤参数
-        columns (dict[Column, FilterTypeEnum]): 要查询的列。
-
-    Returns:
-        添加了where条件的SQL对象。
-    """
-    args = []
-    for column, op_type in columns.items():
-        if (arg := _add_filter(column, query.get(column.key), op_type)) is not None:
-            args.append(arg)
-    return sql.where(*args) if args else sql
-
-
 def download_file(data, file_name):
     """
     从DataFrame下载CSV文件。
@@ -287,7 +188,7 @@ def download_file(data, file_name):
             yield csv_data.getvalue()
 
     if not data:
-        raise APIException(404, APICode.NO_DATA)
+        raise HTTPException(404, "无数据")
 
     file_name = f"{file_name}_{datetime.now().strftime(CONSTANTS.FORMAT_DATE)}.csv"
     headers = {

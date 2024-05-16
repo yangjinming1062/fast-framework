@@ -6,7 +6,7 @@ Description : 在__init__.py中统一导入
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
 
-from ._system import User
+from ._user import User
 from .base import ModelBase
 
 _base = [

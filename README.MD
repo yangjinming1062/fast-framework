@@ -1,5 +1,5 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.104.0+-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0+-green)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-v2.0+-green)
 
 <br/>

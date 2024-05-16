@@ -11,16 +11,16 @@ import logging
 import uuid
 from functools import wraps
 
-from component import logger
+from components import logger
 
 
-def exceptions(default=None, log_level=logging.CRITICAL):
+def exceptions(default=None, log_level=logging.ERROR):
     """
     装饰器: 异常捕获。
 
     Args:
         default (Any | None): 当发生异常时返回的值。
-        log_level: 默认CRITICAL
+        log_level: 默认ERROR
 
     Returns:
         Any: 返回结果取决于执行的函数是否发生异常，如果发生异常则返回default的值，没有则返回函数本身的执行结果。

@@ -9,18 +9,11 @@ Description : model基础信息定义
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import DateTime
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.properties import ColumnProperty
-from typing_extensions import Annotated
-
-str_id = Annotated[str, mapped_column(String(36), index=True)]
-str_small = Annotated[str, mapped_column(String(32))]
-str_medium = Annotated[str, mapped_column(String(64))]
-str_large = Annotated[str, mapped_column(String(128))]
-str_huge = Annotated[str, mapped_column(String(256))]
 
 
 def get_timestamp():
@@ -37,7 +30,7 @@ class ModelBase(DeclarativeBase):
 
     __abstract__ = True
 
-    id: Mapped[str_id] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-24:])
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-24:])
 
     @classmethod
     def get_columns(cls):

@@ -6,8 +6,8 @@ Description : 常量、环境变量，各种参数配置
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """
 
-from .argument import Config
-from .constant import CONSTANTS
+from .constants import CONSTANTS
+from .environments import Config
 
 CONFIG = Config()
 

@@ -12,7 +12,7 @@ from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
-from component import logger
+from components import logger
 from config import CONFIG
 from .classes import JSONExtensionEncoder
 
@@ -24,25 +24,26 @@ class KafkaManager:
 
     _PRODUCER = Producer(CONFIG.kafka_producer_config)
     _QUEUE_SIZE = 0
-    _QUEUE_LIMIT = CONFIG.kafka_producer_queue_size - 10
+    _QUEUE_LIMIT = CONFIG.kafka_producer_queue_size // 2
 
     @staticmethod
-    def get_consumer(*topic, group_name=None, partition=None):
+    def get_consumer(*topic, partition=None, config=None):
         """
         创建一个消费者（返回的消费者已完成指定*topic的订阅）。
         PS: 位置参数为需要订阅的topic名称，其他参数请使用关键字指定
 
         Args:
             topic: 消费的主题。
-            group_name (str): 组名称，默认None时使用CONFIG中的默认值。
             partition (int): 指定监听的分区。
+            config (dict): 消费者配置，默认使用CONFIG中的默认值。
 
         Returns:
             Consumer: 消费者实例。
         """
-        config = CONFIG.kafka_consumer_config
-        if group_name:
-            config["group.id"] = group_name
+        if not config:
+            config = CONFIG.kafka_consumer_config
+        else:
+            config = CONFIG.kafka_consumer_config.update(config)
         consumer = Consumer(config)
         if partition is not None:
             consumer.assign([TopicPartition(t, partition) for t in topic])
@@ -96,12 +97,18 @@ class KafkaManager:
             if limit:
                 # 批量消费
                 while True:
-                    if msgs := consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout):
+                    if msgs := consumer.consume(
+                        num_messages=limit, timeout=CONFIG.kafka_consumer_timeout
+                    ):
                         offset = msgs[0].offset()
                         partition_id = msgs[0].partition()
                         topic = msgs[0].topic()
                         logger.debug(f"{topic=}:{partition_id=}, {offset=}")
-                        yield ([load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x])
+                        yield (
+                            [load(x) for x in msgs if x]
+                            if need_load
+                            else [x.value() for x in msgs if x]
+                        )
             else:
                 # 持续轮询，返回收到的第一条非空消息
                 while True:

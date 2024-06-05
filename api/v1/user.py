@@ -1,6 +1,7 @@
-from ..common import *
+from common.api import *
+from modules.user.schemas import *
 
-router = get_router(__name__, "账户")
+router = get_router()
 
 
 @router.put("", status_code=204)

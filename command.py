@@ -1,68 +1,27 @@
 import argparse
+import os
+from glob import glob
 
-from components import *
-from definitions import *
+from common.command import CommandBase
 
-
-def init_user(username, password):
-    """
-    添加初始用户。
-
-    Args:
-        username (str): 用户名。
-        password (str): 密码。
-
-    Returns:
-        None
-    """
-    with DatabaseManager() as db:
-        uid = generate_key(username)  # 保证多环境管理员的id一致
-        user = db.get(User, uid) or User()
-        user.id = uid
-        user.username = username
-        user.password = generate_key(password)
-        user.identify = UserIdentifyEnum.ADMIN
-        user.phone = "-"
-        user.email = "-"
-        db.add(user)
-
-
-def init_database():
-    """
-    初始化数据库
-
-    Returns:
-        None
-    """
-    pass
+# 自动查找modules目录下的所有模块，并动态导入其中的命令（不导入则不会被注册到CommandBase的registry中）
+for file in glob(os.path.dirname(__file__) + "/modules/*/command.py"):
+    module = file.split(os.sep)[-2]
+    # 动态创建并执行导入表达式
+    exec(f"from modules.{module}.command import *")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Command v1.0")
-    # 添加位置参数
-    parser.add_argument("command", help="命令")
-    # 添加选项参数
-    parser.add_argument(
-        "--username",
-        default="默认管理员",
-        help="初始用户名",
-    )
-    parser.add_argument(
-        "--password",
-        default="m/W*0-nS0t5",
-        help="初始用户密码",
-    )
-
+    parser = argparse.ArgumentParser(description="终端命令行工具")
+    # 添加子命令
+    subparsers = parser.add_subparsers(dest="module")
+    # 注册各个模块的命令参数
+    for name, command in CommandBase.registry.items():
+        command.add_parser(subparsers.add_parser(name))
+    # 解析参数
     args = parser.parse_args()
-
-    # 处理命令
-    if args.command == "user":
-        init_user(args.username, args.password)
-    elif args.command == "init":
-        init_database()
-    else:
-        print("Missed Options")
-    print("Success!")
+    # 执行命令
+    CommandBase.registry[args.module].run(args)
 
 
 if __name__ == "__main__":

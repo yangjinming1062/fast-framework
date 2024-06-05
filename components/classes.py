@@ -1,11 +1,3 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : classes.py
-Author      : jinming.yang@qingteng.cn
-Description : 基础工具类定义
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 import json
 from datetime import datetime
 from enum import Enum
@@ -14,8 +6,8 @@ from ipaddress import IPv6Address
 
 from sqlalchemy.engine import Row
 
-from config import CONSTANTS
 from .functions import bytes_to_str
+from config import CONSTANTS
 
 
 class Singleton(type):

@@ -1,17 +1,10 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : functions.py
-Author      : jinming.yang
-Description : 基础方法的定义实现
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 import base64
 import logging
 import uuid
 from functools import wraps
 
 from components import logger
+from config import CONSTANTS
 
 
 def exceptions(default=None, log_level=logging.ERROR):
@@ -49,7 +42,7 @@ def exceptions(default=None, log_level=logging.ERROR):
     return decorator
 
 
-def generate_key(*args, key_len=24, need_uuid=False):
+def generate_key(*args, key_len=CONSTANTS.ID_LENGTH, need_uuid=False):
     """
     根据输入的参数生成一个唯一性标识。
 

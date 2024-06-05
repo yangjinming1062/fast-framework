@@ -1,8 +1,8 @@
-from .base import *
-from ..enums import *
+from .enums import *
+from common.schema import *
 
 
-class UserSchema(BaseSchema):
+class UserSchema(SchemaBase):
     username: str = ""
     email: str = ""
     phone: str = ""

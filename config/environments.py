@@ -1,13 +1,6 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : environments.py
-Author      : jinming.yang@qingteng.cn
-Description : 环境变量
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 import os
 
+from cryptography.fernet import Fernet
 from pydantic import BaseModel
 
 _ENV = os.getenv
@@ -42,8 +35,10 @@ class Config(BaseModel):
     # JWT
     jwt_token_expire_days: int = int(_ENV("JWT_TOKEN_EXPIRE_DAYS", 7))
     jwt_secret: str = _ENV("JWT_SECRET", "DEMO-SECRET-KEY")
-    # Secret
-    secret_key: bytes = bytes(_ENV("SECRET_KEY", b""))
+    # Secret ※注意：请不要在生产环境中使用默认的随机密钥
+    secret_key: bytes = bytes(_ENV("SECRET_KEY", Fernet.generate_key()))
+    # 其他参数
+    program: str = _ENV("PROGRAM_NAME", "")
 
     # 拓展属性
     @property

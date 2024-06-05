@@ -1,11 +1,3 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : base.py
-Author      : jinming.yang
-Description : model基础信息定义
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 import uuid
 from datetime import datetime
 
@@ -14,6 +6,8 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.properties import ColumnProperty
+
+from config import CONSTANTS
 
 
 def get_timestamp():
@@ -30,7 +24,7 @@ class ModelBase(DeclarativeBase):
 
     __abstract__ = True
 
-    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-24:])
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-CONSTANTS.ID_LENGTH :])
 
     @classmethod
     def get_columns(cls):
@@ -43,7 +37,7 @@ class ModelBase(DeclarativeBase):
         return {p.key: p for p in cls.__mapper__.iterate_properties if isinstance(p, ColumnProperty)}
 
 
-class TimeColumns:
+class ModelTimeColumns:
     """
     时间列基类
     """

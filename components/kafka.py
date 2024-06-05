@@ -1,20 +1,12 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : kafka.py
-Author      : jinming.yang@qingteng.cn
-Description : Kafka相关封装
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 import json
 
 from confluent_kafka import Consumer
 from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
+from .classes import JSONExtensionEncoder
 from components import logger
 from config import CONFIG
-from .classes import JSONExtensionEncoder
 
 
 class KafkaManager:

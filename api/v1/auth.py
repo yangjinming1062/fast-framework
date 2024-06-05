@@ -2,9 +2,10 @@ from datetime import timedelta
 
 from sqlalchemy import or_
 
-from ..common import *
+from common.api import *
+from modules.auth.schemas import *
 
-router = get_router(__name__, "鉴权")
+router = get_router()
 
 
 def _response(user):

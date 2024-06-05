@@ -21,4 +21,3 @@ CREATE TABLE IF NOT EXISTS user (
   `password` VARCHAR(64),
   `status` CHAR(12) DEFAULT "active"
 ) UNIQUE KEY(id) DISTRIBUTED BY HASH(id) BUCKETS AUTO PROPERTIES ("replication_num" = "1");
-

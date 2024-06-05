@@ -1,18 +1,10 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : redis.py
-Author      : jinming.yang@qingteng.cn
-Description : Redis相关封装
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 import json
 
 from redis import ConnectionPool
 from redis import Redis
 
-from config import CONFIG
 from .classes import JSONExtensionEncoder
+from config import CONFIG
 
 
 class RedisManager:

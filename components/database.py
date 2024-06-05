@@ -1,11 +1,3 @@
-"""
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-File Name   : database.py
-Author      : jinming.yang@qingteng.cn
-Description : 数据库连接封装
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-"""
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 

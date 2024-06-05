@@ -1,5 +1,5 @@
-from ._user import UserSchema
-from .base import *
+from ..user.schemas import UserSchema
+from common.schema import *
 
 
 class LoginRequest(BaseModel):

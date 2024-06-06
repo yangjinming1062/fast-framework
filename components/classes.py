@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from datetime import datetime
 from enum import Enum
 from ipaddress import IPv4Address
@@ -31,7 +32,7 @@ class JSONExtensionEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Enum):
             return obj.value
-        if isinstance(obj, datetime):
+        if isinstance(obj, datetime) or isinstance(obj, date):
             return obj.strftime(CONSTANTS.FORMAT_DATE)
         if isinstance(obj, Row):
             return dict(obj._mapping)

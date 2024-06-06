@@ -14,7 +14,7 @@ _DB = create_engine(CONFIG.db_uri, **_ENGINE_PARAMS)
 class DatabaseManager:
     """
     数据库连接管理器
-    PS: 统一实现Postgres和ClickHouse的连接创建、关闭、提交回滚等逻辑
+    PS: 统一实现数据库的连接创建、关闭、提交回滚等逻辑
     """
 
     __slots__ = ("session", "autocommit", "type")
@@ -22,7 +22,7 @@ class DatabaseManager:
 
     def __init__(self, session=None):
         """
-        请使用with 或 async with的上下文语法创建数据库连接。
+        请使用with上下文语法创建数据库连接。
 
         Args:
             session (Session | None): 默认None，如果传递了非None的数据库链接则复用该链接

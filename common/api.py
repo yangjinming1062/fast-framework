@@ -114,7 +114,8 @@ def paginate_query(stmt, request, response_schema, id_column=None, format_func=N
             data = [format_func(x) for x in data]
         result = response_schema(total=total, data=data)
         # 统一进行数据导出的处理
-        return download_file(result.data, response_schema.__doc__.strip()) if request.export else result
+        file_name = response_schema.__doc__.strip() if response_schema.__doc__ else "数据导出"
+        return download_file(result.data, file_name) if request.export else result
 
 
 def download_file(data, file_name):

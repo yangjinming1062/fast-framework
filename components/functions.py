@@ -1,5 +1,4 @@
 import base64
-import logging
 import uuid
 from functools import wraps
 
@@ -7,13 +6,19 @@ from components import logger
 from config import CONSTANTS
 
 
-def exceptions(default=None, log_level=logging.ERROR):
+def exceptions(default=None, log_level=4):
     """
     装饰器: 异常捕获。
 
     Args:
         default (Any | None): 当发生异常时返回的值。
-        log_level: 默认ERROR
+        log_level (int): 默认ERROR, 除了1-5其他取值不进行日志记录。
+            EXCEPTION = 5
+            ERROR = 4
+            WARNING = 3
+            INFO = 2
+            DEBUG = 1
+            NOTSET = 0
 
     Returns:
         Any: 返回结果取决于执行的函数是否发生异常，如果发生异常则返回default的值，没有则返回函数本身的执行结果。
@@ -25,15 +30,15 @@ def exceptions(default=None, log_level=logging.ERROR):
             try:
                 return function(*args, **kwargs)
             except Exception as ex:
-                if log_level == logging.CRITICAL:
+                if log_level == 5:
                     logger.exception(ex)
-                elif log_level == logging.ERROR:
+                elif log_level == 4:
                     logger.error(ex)
-                elif log_level == logging.WARNING:
+                elif log_level == 3:
                     logger.warning(ex)
-                elif log_level == logging.INFO:
+                elif log_level == 2:
                     logger.info(ex)
-                elif log_level == logging.DEBUG:
+                elif log_level == 1:
                     logger.debug(ex)
                 return default
 

@@ -2,6 +2,7 @@
 fastapi==0.111.0
 uvicorn
 pydantic
+pyyaml
 ## jwt
 python-jose>=3.3.0
 # Secret

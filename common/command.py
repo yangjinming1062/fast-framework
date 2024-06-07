@@ -26,7 +26,7 @@ class CommandBase(type):
         运行命令
 
         Args:
-            params (dict[str, str]): key就是在add_parser中定义的参数名
+            params (Namespace): 在add_parser中定义的参数可以.出来
 
         Returns:
 

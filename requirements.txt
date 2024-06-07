@@ -8,8 +8,10 @@ python-jose>=3.3.0
 # Secret
 cryptography==42.0.5
 # DB
+alembic==1.13.1
 SQLAlchemy==2.0.30
 sqlalchemy-doris[pymysql]==0.2.2
+pymysql
 redis==3.5.2
 confluent-kafka==2.4.0
 # Other

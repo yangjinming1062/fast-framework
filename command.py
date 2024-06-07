@@ -5,7 +5,7 @@ from glob import glob
 from common.command import CommandBase
 
 # 自动查找modules目录下的所有模块，并动态导入其中的命令（不导入则不会被注册到CommandBase的registry中）
-for file in glob(os.path.dirname(__file__) + "/modules/*/command.py"):
+for file in glob(os.getcwd() + "/modules/*/command.py"):
     module = file.split(os.sep)[-2]
     # 动态创建并执行导入表达式
     exec(f"from modules.{module}.command import *")

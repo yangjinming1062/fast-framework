@@ -1,7 +1,7 @@
 import os
 from glob import glob
 
-from .common import *
+from common.api import *
 
 # 在当前目录下找所有实现接口的文件，具体的pattern根据实际情况调整，但至少应该保证深度一致
 for name in glob(os.path.dirname(__file__) + "/v*/*.??"):

@@ -33,7 +33,17 @@ docker build -t {image-name}:latest .
 ```
 
 ## 数据迁移
-见[init.sh](data%2Fmigrate%2Finit.sh)
+
+[versions](migrations%2Fversions)目录下存放着当前版本的数据库迁移脚本，执行`alembic upgrade head`命令进行数据库迁移。
+
+代码中调整了model的定义后使用`alembic revision --autogenerate`重新生成迁移脚本。
+**autogenerate只能按照[script.py.mako](migrations%2Fscript.py.mako)模板生成迁移脚本，具体的{version}_upgrade.sql/{version}_downgrade.sql需要根据变更提供**
+
+### 版本号管理:
+
+*建议每个版本仅保留一个版本对应的迁移脚本，多次bugfix的情况下在最终确定版本时生成一个当前版本最终的迁移脚本。*
+具体版本号命名规则按需调整，以下仅为示例：其中v1.0为前一次的发布版本，v1.1为当前版本。过程中的~~v1.0.1~~ -> ~~v1.0.2~~ -> ~~v1.0.3~~在最终发布v1.1进行整合并删除。
+v1.0 -> ~~v1.0.1~~ -> ~~v1.0.2~~ -> ~~v1.0.3~~ -> v1.1 = v1.0 -> v1.1
 
 # 📄 结构介绍
 

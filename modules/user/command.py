@@ -9,7 +9,6 @@ class UserCommand(metaclass=CommandBase):
 
     @staticmethod
     def add_parser(parser):
-        # example
         parser.add_argument(
             "--username",
             default="默认管理员",

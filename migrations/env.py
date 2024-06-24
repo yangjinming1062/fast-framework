@@ -1,9 +1,18 @@
+import os
+from glob import glob
+
 from alembic import context
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from common.model import ModelBase
 from config import CONFIG
+
+# 只有完整导入了各个模块的定义才能在ModelBase.metadata获取完整数据
+for file in glob(os.getcwd() + "/modules/*/models.py"):
+    module = file.split(os.sep)[-2]
+    # 动态创建并执行导入表达式
+    exec(f"from modules.{module}.models import *")
 
 config = context.config
 

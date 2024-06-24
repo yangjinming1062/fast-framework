@@ -34,7 +34,7 @@ class SecretManager:
         解密给定数据并返回解码后的字符串。
 
         Args:
-            data (bytes): 要解密的加密数据。
+            data (bytes | str): 要解密的加密数据。
 
         Returns:
             str: 解码后的字符串。

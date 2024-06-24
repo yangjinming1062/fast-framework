@@ -10,19 +10,9 @@ from config import CONFIG
 class DatabaseCommand(metaclass=CommandBase):
     name = "database"
 
-    @staticmethod
-    def add_parser(parser):
-        # example
-        parser.add_argument(
-            "--option",
-            default="init",
-            help="执行的操作",
-        )
-
     @classmethod
-    def run(cls, params):
-        if params.option == "init":
-            cls.init_db()
+    def run(cls, _):
+        cls.init_db()
 
     @classmethod
     def init_db(cls):

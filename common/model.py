@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime
@@ -6,8 +5,6 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm.properties import ColumnProperty
-
-from config import CONSTANTS
 
 
 def get_timestamp():
@@ -23,8 +20,8 @@ class ModelBase(DeclarativeBase):
     """
 
     __abstract__ = True
-
-    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: uuid.uuid4().hex[-CONSTANTS.ID_LENGTH :])
+    # 尽量选择整型类型。因为整型类型的计算和查找效率远高于字符串。
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     @classmethod
     def get_columns(cls):

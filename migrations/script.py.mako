@@ -1,3 +1,9 @@
+"""${message}
+
+Revision ID: ${up_revision}
+Revises: ${down_revision | comma,n}
+
+"""
 import os
 from typing import Sequence
 from typing import Union

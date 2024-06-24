@@ -3,6 +3,10 @@ from common.schema import *
 
 
 class UserSchema(SchemaBase):
+    """
+    用户信息
+    """
+
     username: str = ""
     email: str = ""
     phone: str = ""
@@ -11,5 +15,9 @@ class UserSchema(SchemaBase):
 
 
 class UpdatePasswordRequest(BaseModel):
+    """
+    修改密码
+    """
+
     old: str
     new: str

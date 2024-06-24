@@ -39,6 +39,7 @@ docker build -t {image-name}:latest .
 代码中调整了model的定义后使用`alembic revision --autogenerate`重新生成迁移脚本。
 **autogenerate只能按照[script.py.mako](migrations%2Fscript.py.mako)模板生成迁移脚本，具体的{version}_upgrade.sql/{version}_downgrade.sql需要根据变更提供**
 
+
 ### 版本号管理:
 
 *建议每个版本仅保留一个版本对应的迁移脚本，多次bugfix的情况下在最终确定版本时生成一个当前版本最终的迁移脚本。*
@@ -112,6 +113,7 @@ API接口的设计主要遵循RESTful API设计规范，同时对一些高度同
 - 自动注册：api目录下已经预先放置了[v1](api%2Fv1)目录,编写接口时只需要在目标文件夹中新增python文件即可在启动API服务时自动完成接口路径的补全：接口路径规则:
   /api/{v1}/{业务模块}/{接口定义的子path}。
 - 统一分页：分页类的接口入参和出参定义应该分别继承自`PaginateRequest`和`PaginateResponse`,然后查询的时候只需要构建好查询数据的SQL语句按照参数要求调用`paginate_query`方法即可（paginate_query对数据的分页、导出文件，总数查询等高度同质化的内容都做了封装）。
+- 错误处理：因为需要对错误响应进行统一的格式化，因此使用了`APIException`来进行错误抛出，同时为了避免硬编码的出现引入了`APICode`类来定义错误码和错误信息。
 - 状态码：目前主要有以下几种状态码，分别对应不同的场景：
   - 200：数据查询成功时（例如：分页、详情、图标等）
   - 201：创建数据类接口成功时（例如：新建数据、创造任务等）
@@ -173,6 +175,13 @@ API接口的设计主要遵循RESTful API设计规范，同时对一些高度同
         stmt = select(Demo.id, Demo.created_at)
         # 添加过滤条件
         if query := request.query:
+            # 以下三种方式等价
+            # 1. 使用集成的add_filters，好处是可以一次性添加上所有的过滤条件
+            stmt = add_filters(stmt, query, {Demo.created_at: FilterTypeEnum.Datetime})
+            # 2. 使用get_condition, 好处同类型的参数处理进行了封装，且比add_filters更灵活可以指定参数应用的位置（where、having）
+            if condition := get_condition(Demo.created_at, query.created_at, FilterTypeEnum.Datetime):
+                stmt = stmt.where(condition)
+            # 3. 直接使用SQLAlchemy的SQL语法进行操作，操作最灵活，但不易统一维护
             if query.created_at:
                 stmt = stmt.where(Demo.created_at.between(query.created_at.start, query.created_at.end))
         # 统一执行查询

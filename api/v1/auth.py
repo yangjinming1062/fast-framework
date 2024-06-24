@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-from sqlalchemy import or_
-
 from common.api import *
 from modules.auth.schemas import *
 
@@ -15,7 +13,7 @@ def _response(user):
     return LoginResponse(user=user, token=token)
 
 
-@router.post("/login")
+@router.post("/login", summary="登录")
 async def login(request: LoginRequest) -> LoginResponse:
     with DatabaseManager() as db:
         sql = select(User).where(
@@ -28,10 +26,10 @@ async def login(request: LoginRequest) -> LoginResponse:
         if user := db.scalar(sql):
             if request.password == SecretManager.decrypt(user.password):
                 return _response(user)
-        raise HTTPException(403, "用户名或密码错误")
+        raise APIException(APICode.INVALID_PASSWORD)
 
 
-@router.post("/password")
+@router.post("/password", summary="重置密码")
 async def password(request: PasswordRequest) -> LoginResponse:
     with DatabaseManager() as db:
         sql = select(User).where(
@@ -48,11 +46,11 @@ async def password(request: PasswordRequest) -> LoginResponse:
                 db.commit()
                 return _response(user)
             else:
-                raise HTTPException(403, "验证码错误")
-        raise HTTPException(403, "用户名或密码错误")
+                raise APIException(APICode.INVALID_CAPTCHA)
+        raise APIException(APICode.INVALID_PASSWORD)
 
 
-@router.post("/register")
+@router.post("/register", summary="注册")
 async def register(request: RegisterRequest) -> LoginResponse:
     with DatabaseManager() as db:
         sql = select(User).where(
@@ -63,7 +61,7 @@ async def register(request: RegisterRequest) -> LoginResponse:
             )
         )
         if db.scalar(sql):
-            raise HTTPException(403, "用户名已存在")
+            raise APIException(APICode.INVALID_USERNAME)
         else:
             user = User(
                 username=request.username,
@@ -77,7 +75,7 @@ async def register(request: RegisterRequest) -> LoginResponse:
             return _response(user)
 
 
-@router.get("/captcha")
+@router.get("/captcha", summary="获取验证码")
 def get_captcha(username: str):
     with DatabaseManager() as db:
         sql = select(User).where(
@@ -91,4 +89,4 @@ def get_captcha(username: str):
             db.commit()
             # TODO: 发送验证码
         else:
-            raise HTTPException(404, "用户名不存在")
+            raise APIException(APICode.NOT_FOUND)

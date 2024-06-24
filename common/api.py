@@ -1,27 +1,90 @@
 import csv
 import inspect
 from datetime import datetime
+from enum import auto
+from enum import Enum
 from io import StringIO
 from urllib.parse import quote
 
 from fastapi import APIRouter
 from fastapi import Depends
-from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from jose import JWTError
 from sqlalchemy import Column
 from sqlalchemy import func
+from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy import text
 
+from common.schema import DateFilterSchema
 from components import *
 from config import *
 from modules.user.enums import UserStatusEnum
 from modules.user.models import User
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
+
+
+class FilterTypeEnum(Enum):
+    """
+    操作类型
+    """
+
+    Datetime = auto()
+    Like = auto()
+    In = auto()
+    NotIn = auto()
+    Equal = auto()
+    NotEqual = auto()
+    GreaterThan = auto()
+    GreaterThanOrEqual = auto()
+    LessThan = auto()
+    LessThanOrEqual = auto()
+
+
+class APICode(Enum):
+    """
+    API接口错误响应代码枚举
+    """
+
+    # PS: 使用auto()自动生成枚举值，因此新增的错误只能在末尾添加，不能插入中间（避免对过往的报错信息）
+    EXCEPTION = auto(), "系统异常", 500
+    VALIDATION = auto(), "入参不合法", 422
+    QUERY = auto(), "数据查询失败", 400
+    CREATE = auto(), "资源创建失败", 400
+    UPDATE = auto(), "资源更新失败", 400
+    DELETE = auto(), "资源删除失败", 400
+    NO_DATA = auto(), "所选范围无数据", 404
+    NOT_FOUND = auto(), "数据不存在", 404
+    INVALID_USER = auto(), "用户不存在", 401
+    INVALID_TOKEN = auto(), "无效的token", 401
+    INVALID_CAPTCHA = auto(), "验证码错误", 403
+    INVALID_PASSWORD = auto(), "用户名或密码错误", 403
+    INVALID_USERNAME = auto(), "用户名已存在", 403
+    UN_SUPPORT = auto(), "不支持的操作", 403
+    FORBIDDEN = auto(), "账号已被禁用, 请联系管理员", 403
+    DUPLICATE_NAME = auto(), "名称重复", 422
+
+
+class APIException(Exception):
+    """
+    API接口报错信息类
+    """
+
+    def __init__(self, code: APICode, msg: str = None, status_code: int = None):
+        """
+
+        Args:
+            code (APICode): 内部报错信息枚举
+            msg (str | None): 附加报错信息，默认None使用code中的报错信息
+            status_code (int): HTTP状态码, 默认使用APICode中定义的状态码，但是也可以自定义。
+        """
+        _c, _m, _sc = code.value
+        self.status_code: int = status_code or _sc
+        self.code: int = _c
+        self.msg: str = msg or _m
 
 
 async def get_user(token: str = Depends(OAUTH2_SCHEME)):
@@ -40,15 +103,15 @@ async def get_user(token: str = Depends(OAUTH2_SCHEME)):
             with DatabaseManager() as db:
                 if user := db.get(User, uid):
                     if user.status == UserStatusEnum.FORBIDDEN:
-                        raise HTTPException(403, "账号已被禁用, 请联系管理员")
+                        raise APIException(APICode.FORBIDDEN)
                     db.expunge(user)
                     return user
                 else:
-                    raise HTTPException(403, "用户不存在")
+                    raise APIException(APICode.INVALID_USER)
         else:
-            raise HTTPException(401, "无效的token")
+            raise APIException(APICode.INVALID_TOKEN)
     except JWTError:
-        raise HTTPException(401, "无效的token")
+        raise APIException(APICode.INVALID_TOKEN)
 
 
 def get_router(path=None, name=None) -> APIRouter:
@@ -142,7 +205,7 @@ def download_file(data, file_name):
             yield csv_data.getvalue()
 
     if not data:
-        raise HTTPException(404, "无数据")
+        raise APIException(APICode.NO_DATA)
 
     file_name = f"{file_name}_{datetime.now().strftime(CONSTANTS.FORMAT_DATE)}.csv"
     headers = {
@@ -150,3 +213,74 @@ def download_file(data, file_name):
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(file_name)}",
     }
     return StreamingResponse(get_csv(), headers=headers)
+
+
+def get_condition(column, value, op_type):
+    """
+    生成过滤条件。
+
+    Args:
+        column (Column | InstrumentedAttribute): 要查询的列。
+        value (Any): 查询参数。
+        op_type (FilterTypeEnum): 操作类型。
+
+    Returns:
+        ColumnElement[bool] | None
+    """
+
+    if value is not None:
+        if op_type == FilterTypeEnum.Datetime:
+            assert isinstance(value, DateFilterSchema), "value must be a DateFilterSchema"
+            return column.between(value.started_at, value.ended_at)
+        elif op_type == FilterTypeEnum.Like:
+            if isinstance(value, list):
+                # like也可以用于列表：以或的关系
+                return or_(*[column.like(f"%{x}%") for x in value])
+            else:
+                # 使用like运算符
+                return column.like(f"%{value}%")
+        elif op_type == FilterTypeEnum.In:
+            # in运算符
+            return column.in_(value)
+        elif op_type == FilterTypeEnum.NotIn:
+            # notin运算符
+            return column.notin_(value)
+        elif op_type == FilterTypeEnum.Equal:
+            # 添加等于条件
+            return column == value
+        elif op_type == FilterTypeEnum.NotEqual:
+            # 添加不等于条件
+            return column != value
+        elif op_type == FilterTypeEnum.GreaterThan:
+            # 添加大于条件
+            return column > value
+        elif op_type == FilterTypeEnum.GreaterThanOrEqual:
+            # 添加大于等于条件
+            return column >= value
+        elif op_type == FilterTypeEnum.LessThan:
+            # 添加小于条件
+            return column < value
+        elif op_type == FilterTypeEnum.LessThanOrEqual:
+            # 添加小于等于条件
+            return column <= value
+
+
+def add_filters(sql, query, columns):
+    """
+    向SQL对象添加Where查询条件。
+
+    Args:
+        sql (Select): SQLAlchemy SQL语句对象。
+        query (SchemaBase): xxxRequest中的Query对象。
+        columns (dict[Column | InstrumentedAttribute, FilterTypeEnum]): 要查询的列及期望的查询方式。
+
+    Returns:
+        添加了where条件的SQL对象。
+    """
+    if not query:
+        return sql
+    args = []
+    for column, op_type in columns.items():
+        if (arg := get_condition(column, getattr(query, column.key), op_type)) is not None:
+            args.append(arg)
+    return sql.where(*args) if args else sql

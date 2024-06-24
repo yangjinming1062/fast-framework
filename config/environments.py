@@ -24,8 +24,15 @@ def get_env(name, default):
     _YAML_FILE_CONFIG = {}
 
     env_file = ".env"
+    dev_env_file = "dev.env"
     if os.path.exists(env_file):
         with open(env_file, "r") as file:
+            for line in file:
+                if line.strip() and not line.startswith("#"):
+                    key, value = line.strip().split("=")
+                    _ENV_FILE_CONFIG[key.strip()] = value.strip()
+    elif os.path.exists(dev_env_file):
+        with open(dev_env_file, "r") as file:
             for line in file:
                 if line.strip() and not line.startswith("#"):
                     key, value = line.strip().split("=")

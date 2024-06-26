@@ -19,8 +19,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.mirrors.ustc.edu.cn/simple
 # 拷贝项目内容
 COPY . .
-# 启动脚本
-RUN chmod +x init.sh
-ENTRYPOINT ["./init.sh"]
+# 赋予脚本执行权限
+RUN chmod +x start.sh
 # 启动命令
-CMD ["supervisord","-c","./supervisord.conf"]
+ENTRYPOINT ["./start.sh"]

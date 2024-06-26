@@ -17,31 +17,34 @@ def get_env(name, default):
 
     """
 
+    def load_env_file(file_path):
+        tmp = {}
+        if os.path.exists(file_path):
+            with open(file_path, "r") as file:
+                for line in file:
+                    if line.strip() and not line.startswith("#"):
+                        key, value = line.strip().split("=")
+                        tmp[key.strip()] = value.strip()
+        return tmp
+
+    def load_yaml_file(file_path):
+        tmp = {}
+        if os.path.exists(file_path):
+            with open(file_path, "r") as file:
+                tmp = yaml.safe_load(file)
+        return tmp
+
     def _get_env():
         return os.getenv(name) or _ENV_FILE_CONFIG.get(name) or _YAML_FILE_CONFIG.get(name) or default
 
     _ENV_FILE_CONFIG = {}
     _YAML_FILE_CONFIG = {}
 
-    env_file = ".env"
-    dev_env_file = "dev.env"
-    if os.path.exists(env_file):
-        with open(env_file, "r") as file:
-            for line in file:
-                if line.strip() and not line.startswith("#"):
-                    key, value = line.strip().split("=")
-                    _ENV_FILE_CONFIG[key.strip()] = value.strip()
-    elif os.path.exists(dev_env_file):
-        with open(dev_env_file, "r") as file:
-            for line in file:
-                if line.strip() and not line.startswith("#"):
-                    key, value = line.strip().split("=")
-                    _ENV_FILE_CONFIG[key.strip()] = value.strip()
-
-    yaml_file = "config.yaml"
-    if os.path.exists(yaml_file):
-        with open(yaml_file, "r") as file:
-            _YAML_FILE_CONFIG = yaml.safe_load(file)
+    # 注入env文件
+    _ENV_FILE_CONFIG.update(load_env_file(".env"))
+    _ENV_FILE_CONFIG.update(load_env_file("dev.env"))
+    # 注入yaml文件
+    _YAML_FILE_CONFIG.update(load_yaml_file("config.yaml"))
 
     return _get_env()
 
@@ -76,7 +79,7 @@ class Config(BaseModel):
     jwt_token_expire_days: int = int(get_env("JWT_TOKEN_EXPIRE_DAYS", 7))
     jwt_secret: str = get_env("JWT_SECRET", "DEMO-SECRET-KEY")
     # Secret ※注意：请不要在生产环境中使用默认的随机密钥
-    secret_key: bytes = bytes(get_env("SECRET_KEY", Fernet.generate_key()))
+    secret_key: bytes = bytes(get_env("SECRET_KEY", "").encode()) or Fernet.generate_key()
     # 其他参数
     program: str = get_env("PROGRAM_NAME", "")
 

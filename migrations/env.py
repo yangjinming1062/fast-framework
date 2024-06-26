@@ -17,7 +17,7 @@ for file in glob(os.getcwd() + "/modules/*/models.py"):
 config = context.config
 
 # alembic不支持doris，因此这里需要替换成mysql
-config.set_main_option("sqlalchemy.url", CONFIG.db_uri.replace("doris", "mysql"))
+config.set_main_option("sqlalchemy.url", CONFIG.db_uri.replace("doris+", "mysql+"))
 target_metadata = ModelBase.metadata
 
 

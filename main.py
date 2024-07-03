@@ -24,7 +24,7 @@ def register_handler(_app):
     async def exception_handler(_: Request, ex: Exception):
         detail = traceback.format_exception(ex)
         logger.exception(ex)
-        code, msg, sc = APICode.EXCEPTION
+        code, msg, sc = APICode.EXCEPTION.value
         content = {
             "code": code,
             "message": msg,
@@ -34,7 +34,7 @@ def register_handler(_app):
 
     @_app.exception_handler(RequestValidationError)
     async def request_validation_handler(_: Request, ex: RequestValidationError):
-        code, msg, sc = APICode.VALIDATION
+        code, msg, sc = APICode.VALIDATION.value
         content = {
             "code": code,
             "message": msg,

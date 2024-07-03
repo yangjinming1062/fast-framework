@@ -59,7 +59,7 @@ class KafkaManager:
             logger.error("Kafka发送失败", err)
 
     @staticmethod
-    def consume(*topic, consumer=None, limit=None, need_load=True):
+    def consume(*topic, consumer=None, limit=None, need_load=True, timeout=None):
         """
         消费指定主题的数据。
         PS: 位置参数为需要订阅的topic名称，其他参数请使用关键字指定
@@ -69,6 +69,7 @@ class KafkaManager:
             consumer (Consumer | None): 默认为None时会自动创建一个消费者，并在方法结束调用后取消订阅并关闭自动创建的消费者对象。
             limit (int | None): 批处理中要使用的消息数。默认值为None，表示每次返回单个消息。
             need_load (bool | None): 是否返回JSON解码消息, 默认为True会对订阅到的消息进行json.load。
+            timeout (int | None): 超时时长，默认使用CONFIG.kafka_consumer_timeout。
 
         Yields:
             list | dict | str: 如果指定了“limit”，则返回JSON解码消息的列表。
@@ -89,21 +90,27 @@ class KafkaManager:
             if limit:
                 # 批量消费
                 while True:
-                    if msgs := consumer.consume(num_messages=limit, timeout=CONFIG.kafka_consumer_timeout):
+                    if msgs := consumer.consume(num_messages=limit, timeout=timeout or CONFIG.kafka_consumer_timeout):
                         offset = msgs[0].offset()
                         partition_id = msgs[0].partition()
                         topic = msgs[0].topic()
                         logger.debug(f"{topic=}:{partition_id=}, {offset=}")
-                        yield ([load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x])
+                        yield [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
             else:
                 # 持续轮询，返回收到的第一条非空消息
                 while True:
-                    msg = consumer.poll(1.0)
+                    msg = consumer.poll(timeout or 1.0)
                     if msg is None:
-                        continue
-                    if msg.error():
-                        raise ValueError(msg.error())
-                    yield load(msg) if need_load else msg.value()
+                        if timeout is not None:
+                            # 指定了超时时间到时间没数据给调用方返回None
+                            yield None
+                        else:
+                            # 没指定超时时长则一直等到有数据
+                            continue
+                    else:
+                        if msg.error():
+                            raise ValueError(msg.error())
+                        yield load(msg) if need_load else msg.value()
         except Exception as ex:
             logger.error(ex)
             # 不是函数内创建的消费者不进行取消订阅以及关闭操作

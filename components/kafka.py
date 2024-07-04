@@ -96,21 +96,27 @@ class KafkaManager:
                         topic = msgs[0].topic()
                         logger.debug(f"{topic=}:{partition_id=}, {offset=}")
                         yield [load(x) for x in msgs if x] if need_load else [x.value() for x in msgs if x]
-            else:
-                # 持续轮询，返回收到的第一条非空消息
-                while True:
-                    msg = consumer.poll(timeout or 1.0)
-                    if msg is None:
+                    else:
                         if timeout is not None:
                             # 指定了超时时间到时间没数据给调用方返回None
                             yield None
                         else:
                             # 没指定超时时长则一直等到有数据
                             continue
-                    else:
+            else:
+                # 持续轮询，返回收到的第一条非空消息
+                while True:
+                    if msg := consumer.poll(timeout or 1.0):
                         if msg.error():
                             raise ValueError(msg.error())
                         yield load(msg) if need_load else msg.value()
+                    else:
+                        if timeout is not None:
+                            # 指定了超时时间到时间没数据给调用方返回None
+                            yield None
+                        else:
+                            # 没指定超时时长则一直等到有数据
+                            continue
         except Exception as ex:
             logger.error(ex)
             # 不是函数内创建的消费者不进行取消订阅以及关闭操作

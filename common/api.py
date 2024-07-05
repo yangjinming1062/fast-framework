@@ -42,6 +42,7 @@ class FilterTypeEnum(Enum):
     GreaterThanOrEqual = auto()
     LessThan = auto()
     LessThanOrEqual = auto()
+    MultiMatch = auto()
 
 
 class APICode(Enum):
@@ -229,40 +230,44 @@ def get_condition(column, value, op_type):
     """
 
     if value is not None:
-        if op_type == FilterTypeEnum.Datetime:
-            assert isinstance(value, DateFilterSchema), "value must be a DateFilterSchema"
-            return column.between(value.started_at, value.ended_at)
-        elif op_type == FilterTypeEnum.Like:
-            if isinstance(value, list):
-                # like也可以用于列表：以或的关系
-                return or_(*[column.like(f"%{x}%") for x in value])
-            else:
-                # 使用like运算符
-                return column.like(f"%{value}%")
-        elif op_type == FilterTypeEnum.In:
-            # in运算符
-            return column.in_(value)
-        elif op_type == FilterTypeEnum.NotIn:
-            # notin运算符
-            return column.notin_(value)
-        elif op_type == FilterTypeEnum.Equal:
-            # 添加等于条件
-            return column == value
-        elif op_type == FilterTypeEnum.NotEqual:
-            # 添加不等于条件
-            return column != value
-        elif op_type == FilterTypeEnum.GreaterThan:
-            # 添加大于条件
-            return column > value
-        elif op_type == FilterTypeEnum.GreaterThanOrEqual:
-            # 添加大于等于条件
-            return column >= value
-        elif op_type == FilterTypeEnum.LessThan:
-            # 添加小于条件
-            return column < value
-        elif op_type == FilterTypeEnum.LessThanOrEqual:
-            # 添加小于等于条件
-            return column <= value
+        match op_type:
+            case FilterTypeEnum.Datetime:
+                assert isinstance(value, DateFilterSchema), "value must be a DateFilterSchema"
+                return column.between(value.started_at, value.ended_at)
+            case FilterTypeEnum.Like:
+                if isinstance(value, list):
+                    # like也可以用于列表：以或的关系
+                    return or_(*[column.like(f"%{x}%") for x in value])
+                else:
+                    # 使用like运算符
+                    return column.like(f"%{value}%")
+            case FilterTypeEnum.In:
+                # in运算符
+                return column.in_(value)
+            case FilterTypeEnum.NotIn:
+                # notin运算符
+                return column.notin_(value)
+            case FilterTypeEnum.Equal:
+                # 添加等于条件
+                return column == value
+            case FilterTypeEnum.NotEqual:
+                # 添加不等于条件
+                return column != value
+            case FilterTypeEnum.GreaterThan:
+                # 添加大于条件
+                return column > value
+            case FilterTypeEnum.GreaterThanOrEqual:
+                # 添加大于等于条件
+                return column >= value
+            case FilterTypeEnum.LessThan:
+                # 添加小于条件
+                return column < value
+            case FilterTypeEnum.LessThanOrEqual:
+                # 添加小于等于条件
+                return column <= value
+            case FilterTypeEnum.MultiMatch:
+                # 匹配列表中的任意值的情况
+                return func.multi_match_any(column, value)
 
 
 def add_filters(sql, query, columns):

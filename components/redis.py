@@ -34,7 +34,7 @@ class RedisManager:
         Returns:
             list | dict | Any: json.loads后的对象或default
         """
-        if not cls._CLIENT:
+        if not getattr(cls, "_CLIENT", None):
             cls._CLIENT = cls.get_client(keepalive=True)
         if value := cls._CLIENT.get(key):
             return json.loads(value)
@@ -51,7 +51,7 @@ class RedisManager:
             value (dict | list): 可json.dumps的数据。
             ex (int | None): 以秒为单位的过期时间。默认为None。
         """
-        if not cls._CLIENT:
+        if not getattr(cls, "_CLIENT", None):
             cls._CLIENT = cls.get_client(keepalive=True)
         if not isinstance(value, str):
             value = json.dumps(value, cls=JSONExtensionEncoder)

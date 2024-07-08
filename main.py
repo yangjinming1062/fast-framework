@@ -77,4 +77,7 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":  # Debug时使用该方法
+    for x in APICode:
+        c, m, s = x.value
+        print(f"错误消息：{m}，错误码：{c}，状态码：{s}")
     uvicorn.run(app, host="127.0.0.1", port=8080)

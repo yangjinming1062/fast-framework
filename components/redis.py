@@ -48,7 +48,7 @@ class RedisManager:
 
         Args:
             key (str): 储值的键。
-            value (dict | list): 可json.dumps的数据。
+            value (dict | list | str): 可json.dumps的数据。
             ex (int | None): 以秒为单位的过期时间。默认为None。
         """
         if not getattr(cls, "_CLIENT", None):

@@ -7,9 +7,9 @@ ENV LANG=zh_CN.UTF-8
 # 安装一些辅助apt包
 RUN sed -i s@/deb.debian.org/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
     sed -i s@/security.debian.org/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list && \
-    apt-get clean && apt update && \
-    apt install -y vim lrzsz supervisor && \
-    apt clean -y &&  rm -rf /var/cache/debconf/* /var/lib/apt/lists/* /var/log/* /var/tmp/* /tmp/*
+    apt-get clean && apt-get update && \
+    apt-get install -y supervisor && \
+    apt-get clean -y &&  rm -rf /var/cache/debconf/* /var/lib/apt/lists/* /var/log/* /var/tmp/* /tmp/*
 # 设置工作目录
 WORKDIR /app
 # 对外端口

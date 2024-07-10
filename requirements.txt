@@ -1,6 +1,6 @@
 # Framework
 fastapi==0.111.0
-uvicorn
+hypercorn
 pydantic
 pyyaml
 ## jwt

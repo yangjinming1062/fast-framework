@@ -1,6 +1,7 @@
 import json
 
 from confluent_kafka import Consumer
+from confluent_kafka import KafkaError
 from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
@@ -91,6 +92,11 @@ class KafkaManager:
                 # 批量消费
                 while True:
                     if msgs := consumer.consume(num_messages=limit, timeout=timeout or CONFIG.kafka_consumer_timeout):
+                        if msgs[0].error():
+                            if msgs[0].error().code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
+                                logger.warning(f"Kafka消费失败，{topic=}不存在")
+                                continue
+                            raise ValueError(msgs[0].error())
                         offset = msgs[0].offset()
                         partition_id = msgs[0].partition()
                         topic = msgs[0].topic()
@@ -108,6 +114,9 @@ class KafkaManager:
                 while True:
                     if msg := consumer.poll(timeout or 1.0):
                         if msg.error():
+                            if msg.error().code() == KafkaError.UNKNOWN_TOPIC_OR_PART:
+                                logger.warning(f"Kafka消费失败，{topic=}不存在")
+                                continue
                             raise ValueError(msg.error())
                         yield load(msg) if need_load else msg.value()
                     else:

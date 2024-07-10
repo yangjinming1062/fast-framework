@@ -96,7 +96,7 @@ async def get_user(token: str = Depends(OAUTH2_SCHEME)):
         token:
 
     Returns:
-
+        User:
     """
     try:
         payload = jwt.decode(token, CONFIG.jwt_secret, algorithms=[CONSTANTS.JWT_ALGORITHM])

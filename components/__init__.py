@@ -3,12 +3,12 @@ import sys
 
 from loguru import logger
 
-from .classes import JSONExtensionEncoder
 from .classes import Singleton
 from .database import DatabaseManager
 from .functions import bytes_to_str
 from .functions import exceptions
 from .functions import generate_key
+from .functions import orjson_dump_extend
 from .functions import str_to_bytes
 from .kafka import KafkaManager
 from .redis import RedisManager
@@ -65,12 +65,12 @@ if CONFIG.log_dir or CONFIG.log_stdout:
 
 __all__ = [
     "logger",
-    "JSONExtensionEncoder",
     "Singleton",
     "DatabaseManager",
     "bytes_to_str",
     "exceptions",
     "generate_key",
+    "orjson_dump_extend",
     "str_to_bytes",
     "KafkaManager",
     "RedisManager",

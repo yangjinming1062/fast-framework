@@ -250,7 +250,6 @@ API接口的设计主要遵循RESTful API设计规范，同时对一些高度同
     ```
   - `DatabaseManager`： 统一实现数据库的连接创建、关闭、提交回滚等逻辑
     ```
-    import json
     from components import *
   
     with DatabaseManager() as db:

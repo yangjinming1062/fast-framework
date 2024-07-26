@@ -2,6 +2,8 @@ import base64
 import uuid
 from functools import wraps
 
+from sqlalchemy import Row
+
 from components import logger
 from config import CONSTANTS
 
@@ -90,3 +92,14 @@ def str_to_bytes(value):
         bytes
     """
     return base64.b64decode(value.encode())
+
+
+def orjson_dump_extend(value):
+    """
+    拓展orjson的可序列类型
+    """
+    if isinstance(value, Row):
+        return dict(value._mapping)
+    if isinstance(value, bytes):
+        # 将bytes类型转为base64编码的字符串
+        return value.decode()

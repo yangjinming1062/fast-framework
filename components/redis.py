@@ -1,9 +1,8 @@
-import json
-
+import orjson
 from redis import ConnectionPool
 from redis import Redis
 
-from .classes import JSONExtensionEncoder
+from .functions import orjson_dump_extend
 from config import CONFIG
 
 
@@ -32,12 +31,12 @@ class RedisManager:
             default (Any): 没查到数据时返回的值，默认None。
 
         Returns:
-            list | dict | Any: json.loads后的对象或default
+            list | dict | Any: orjson.loads后的对象或default
         """
         if not getattr(cls, "_CLIENT", None):
             cls._CLIENT = cls.get_client(keepalive=True)
         if value := cls._CLIENT.get(key):
-            return json.loads(value)
+            return orjson.loads(value)
         else:
             return default
 
@@ -54,7 +53,7 @@ class RedisManager:
         if not getattr(cls, "_CLIENT", None):
             cls._CLIENT = cls.get_client(keepalive=True)
         if not isinstance(value, str):
-            value = json.dumps(value, cls=JSONExtensionEncoder)
+            value = orjson.dumps(value, default=orjson_dump_extend)
         cls._CLIENT.set(key, value, ex)
 
     @staticmethod

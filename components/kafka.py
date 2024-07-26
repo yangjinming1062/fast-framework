@@ -1,11 +1,10 @@
-import json
-
+import orjson
 from confluent_kafka import Consumer
 from confluent_kafka import KafkaError
 from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
-from .classes import JSONExtensionEncoder
+from .functions import orjson_dump_extend
 from components import logger
 from config import CONFIG
 
@@ -81,7 +80,7 @@ class KafkaManager:
 
         def load(item):
             try:
-                return json.loads(item.value())
+                return orjson.loads(item.value())
             except Exception as e:
                 logger.error(f"Kafka消费失败，无法解析消息：{item.value()}: {e=}")
 
@@ -158,7 +157,7 @@ class KafkaManager:
                 None
             """
             if isinstance(value, dict):
-                value = json.dumps(value, cls=JSONExtensionEncoder)
+                value = orjson.dumps(value, default=orjson_dump_extend)
             cls._PRODUCER.produce(
                 topic=topic,
                 value=value,

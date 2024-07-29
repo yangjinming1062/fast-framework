@@ -1,8 +1,28 @@
-from ..user.schemas import UserSchema
+from .enums import *
 from common.schema import *
 
 
-class LoginRequest(BaseModel):
+class UserSchema(SchemaBase):
+    """
+    用户信息
+    """
+
+    username: str = ""
+    email: str = ""
+    phone: str = ""
+    status: UserStatusEnum = UserStatusEnum.ACTIVE
+
+
+class UpdatePasswordRequest(SchemaBase):
+    """
+    修改密码
+    """
+
+    old: str
+    new: str
+
+
+class LoginRequest(SchemaBase):
     """
     登录认证
     """
@@ -11,7 +31,16 @@ class LoginRequest(BaseModel):
     password: str = Field(title="密码")
 
 
-class RegisterRequest(BaseModel):
+class LoginResponse(SchemaBase):
+    """
+    登录成功响应
+    """
+
+    user: UserSchema
+    token: str = Field(title="访问令牌")
+
+
+class RegisterRequest(SchemaBase):
     """
     注册用户
     """
@@ -22,7 +51,7 @@ class RegisterRequest(BaseModel):
     email: str = Field("", title="邮箱")
 
 
-class PasswordRequest(BaseModel):
+class ResetPasswordRequest(SchemaBase):
     """
     重置密码
     """
@@ -30,20 +59,3 @@ class PasswordRequest(BaseModel):
     username: str = Field(title="账号")
     password: str = Field(title="密码")
     captcha: str = Field(title="验证码")
-
-
-class CapchaRequest(BaseModel):
-    """
-    获取验证码
-    """
-
-    username: str = Field(title="账号")
-
-
-class LoginResponse(BaseModel):
-    """
-    登录成功响应
-    """
-
-    user: UserSchema
-    token: str = Field(title="访问令牌")

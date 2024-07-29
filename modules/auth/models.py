@@ -1,3 +1,5 @@
+from sqlalchemy import JSON
+
 from .enums import *
 from common.model import *
 from components import generate_key
@@ -18,3 +20,4 @@ class User(ModelBase, ModelTimeColumns):
     username: Mapped[str]
     password: Mapped[str]
     status: Mapped[UserStatusEnum] = mapped_column(default=UserStatusEnum.ACTIVE)
+    plugins: Mapped[dict] = mapped_column(JSON, default={})

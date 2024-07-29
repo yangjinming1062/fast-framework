@@ -21,8 +21,8 @@ from sqlalchemy import text
 from common.schema import DateFilterSchema
 from components import *
 from config import *
-from modules.user.enums import UserStatusEnum
-from modules.user.models import User
+from modules.auth.enums import UserStatusEnum
+from modules.auth.models import User
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -208,7 +208,7 @@ def download_file(data, file_name):
     if not data:
         raise APIException(APICode.NO_DATA)
 
-    file_name = f"{file_name}_{datetime.now().strftime(CONSTANTS.FORMAT_DATE)}.csv"
+    file_name = f"{file_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     headers = {
         "Content-Type": "text/csv;charset=utf-8",
         "Content-Disposition": f"attachment; filename*=UTF-8''{quote(file_name)}",
@@ -267,7 +267,7 @@ def get_condition(column, value, op_type):
                 return column <= value
             case FilterTypeEnum.MultiMatch:
                 # 匹配列表中的任意值的情况
-                return func.multi_match_any(column, value)
+                return text(f"multi_match_any({column.name}, {value})")
 
 
 def add_filters(sql, query, columns):

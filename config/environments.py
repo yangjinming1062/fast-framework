@@ -50,6 +50,7 @@ def get_env(name, default):
 
 
 class Config(BaseModel):
+    debug: bool = bool(get_env("DEBUG", True))
     # 日志记录
     log_dir: str = get_env("LOG_DIR", "")
     log_level: str = get_env("LOG_LEVEL", "INFO")

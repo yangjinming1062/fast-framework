@@ -9,6 +9,15 @@ FastAPI后端项目框架
 <h4 align="center">专注于你的业务逻辑.</h4>
 <br/>
 
+# 目录
+
+- [⚡ 快速开始](#-快速开始)
+- [🔧 环境配置](#-环境配置)
+- [🚀 部署指南](#-部署指南)
+- [💻 开发规范](#-开发规范)
+- [📄 结构介绍](#-结构介绍)
+- [📚 使用帮助](#-使用帮助)
+
 # 💡 功能特点
 
 - 容器化：提供Docker及docker-compose文件，按需修改其中的参数即可使用（不改也能用）
@@ -26,12 +35,6 @@ FastAPI后端项目框架
 4. 运行`pre-commit run -a`初始化repos
 5. 运行main.py文件启动API服务
 
-## 构建镜像
-
-```
-docker build -t {image-name}:latest .
-```
-
 ## 数据迁移
 
 [versions](migrations%2Fversions)目录下存放着当前版本的数据库迁移脚本，执行`alembic upgrade head`命令进行数据库迁移。
@@ -39,12 +42,70 @@ docker build -t {image-name}:latest .
 代码中调整了model的定义后使用`alembic revision --autogenerate`重新生成迁移脚本。
 **autogenerate只能按照[script.py.mako](migrations%2Fscript.py.mako)模板生成迁移脚本，具体的{version}_upgrade.sql/{version}_downgrade.sql需要根据变更提供**
 
-
 ### 版本号管理:
 
 *建议每个版本仅保留一个版本对应的迁移脚本，多次bugfix的情况下在最终确定版本时生成一个当前版本最终的迁移脚本。*
 具体版本号命名规则按需调整，以下仅为示例：其中v1.0为前一次的发布版本，v1.1为当前版本。过程中的~~v1.0.1~~ -> ~~v1.0.2~~ -> ~~v1.0.3~~在最终发布v1.1进行整合并删除。
 v1.0 -> ~~v1.0.1~~ -> ~~v1.0.2~~ -> ~~v1.0.3~~ -> v1.1 = v1.0 -> v1.1
+
+# 🔧 环境配置
+
+## 配置文件说明
+
+项目使用多种配置文件管理系统配置，单一配置文件中可以只提供部分参数，比如只想修改数据库连接地址则dev.env只提供数据库参数即可，不必给出全部所有的参数
+
+## 环境变量优先级
+
+配置加载优先级从高到低：
+
+1. 环境变量
+2. dev.env
+3. .env
+4. config.yaml
+5. 参数默认值
+
+# 🚀 部署指南
+
+## Docker部署
+
+1. 构建镜像
+
+```bash
+docker build -t {image-name}:latest .
+```
+
+2. 运行容器
+
+```bash
+docker run -d \
+  --name api-server \
+  -p 8000:8000 \
+  -v /path/to/config.yaml:/app/config.yaml \
+  {image-name}:latest
+```
+
+3. 使用Docker Compose（推荐）
+
+```yaml
+services:
+  api-server:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config.yaml:/app/config.yaml
+```
+
+# 💻 开发规范
+
+## Git分支管理
+
+- `main`: 主分支,按版本号进行合并
+- `dev/*`: 各种开发中的分支
+
+## 代码风格
+
+项目使用pre-commit进行代码风格检查，主要使用black进行Python代码格式化
 
 # 📄 结构介绍
 
@@ -126,229 +187,252 @@ API接口的设计主要遵循RESTful API设计规范，同时对一些高度同
 
 # 📚 使用帮助
 
-本节主要针对基础功能代码的使用进行示例展示
+## 公共代码封装
 
-- [common](common)：
-  - [api.py](common%2Fapi.py)：用于API接口，主要使用场景是添加接口路由：
-    ```
-    from common.api import *  # api中几乎都是需要的东西（不需要的导入了也不会产生影响，因此建议直接*导入全部）
-    from modules.{业务模块}.models import *
-    from modules.{业务模块}.schemas import *
-    
-    router = get_router()  # router这个名字不能变，因为自动注册接口就是按照这个名字来处理的
-    
-    # 注册类接口
-    @router.post("", status_code=201)
-    async def create_demo(request: DemoSchema):
-        """
-        示例：新增数据
-        """
-        ...
-    
-    
-    # 删除数据
-    @router.delete("", status_code=204)
-    async def delete_demo(request: list[str]):
-        """
-        示例：删除数据
-        """
-        ...
-    
-    
-    
-    # 编辑数据
-    @router.put("", status_code=204)
-    async def edit_demo(request: DemoSchema):
-        """
-        示例：修改数据
-        """
-        ...
-    
-    
-    # 分页查询
-    @router.post("/demos")
-    async def get_demo_list(request: DemosRequest) -> DemosResponse:
-        """
-        示例：查询列表
-        """
-        # 生成查询语句
-        stmt = select(Demo.id, Demo.created_at)
-        # 添加过滤条件
-        if query := request.query:
-            # 以下三种方式等价
-            # 1. 使用集成的add_filters，好处是可以一次性添加上所有的过滤条件
-            stmt = add_filters(stmt, query, {Demo.created_at: FilterTypeEnum.Datetime})
-            # 2. 使用get_condition, 好处同类型的参数处理进行了封装，且比add_filters更灵活可以指定参数应用的位置（where、having）
-            if condition := get_condition(Demo.created_at, query.created_at, FilterTypeEnum.Datetime):
-                stmt = stmt.where(condition)
-            # 3. 直接使用SQLAlchemy的SQL语法进行操作，操作最灵活，但不易统一维护
-            if query.created_at:
-                stmt = stmt.where(Demo.created_at.between(query.created_at.start, query.created_at.end))
-        # 统一执行查询
-        return paginate_query(stmt, request, DemosResponse)
-    
-    
-    # 查询详情
-    @router.get("/{id}")
-    async def get_demo_detail(id: str) -> DemoSchema:
-        """
-        示例：查询详情
-        """
-        ...
-    ```
-  - [command.py](common%2Fcommand.py)：如果需要实现后台任务（与API服务并行），则需要在业务模块的command.py中按照下面的方式实现自定义的Command类：
-    ```
-    from common.command import CommandBase
-    
-    class DemoCommand(metaclass=CommandBase):
-        name = "demo"  # 命令名称，必须唯一，自动注册命令时会使用这个名字，同时这个也是python command.py {module} xxx 中的module的参数值
-      
-        @staticmethod
-        def add_parser(parser):
-            parser.add_argument(
-                "--username",
-                default="admin",
-                help="参数说明",
-            )
-      
-        @staticmethod
-        def run(params):
-            assert "username" in params
-    ```
-  - [model.py](common%2Fmodel.py)：如果需要定于数据库的ORM模型，则需要在业务模块的models.py中按照下面的方式定义：
-    ```
-    from .enums import *
-    from common.model import *
+### API接口
+
+[api.py](common%2Fapi.py)：用于API接口，主要使用场景是添加接口路由
+
+```python
+from common.api import *  # api中几乎都是需要的东西（不需要的导入了也不会产生影响，因此建议直接*导入全部）
+from modules.{业务模块}.models import *
+from modules.{业务模块}.schemas import *
+
+router = get_router()  # router这个变量名字不能改，因为自动注册接口就是按照这个名字来处理的
+
+# 注册类接口标准：新增数据实体成功响应新增数据的id，返回201状态码
+@router.post("", status_code=201)
+async def create_demo(request: DemoSchema):
+    """
+    示例：新增数据
+    """
+    ...
 
 
-    class Demo(ModelBase, ModelTimeColumns):
-        __tablename__ = "demo"
-
-        type: Mapped[DemoTypeEnum]
-        ...
-
-    ```
-  - [schema.py](common%2Fschema.py)：业务模块的schema.py中按照下面的方式定义：
-    ```
-    from .enums import *
-    from common.schema import *
+# 删除数据标准：可接收复数的params参数传递id，删除成功时无响应数据返回204状态码
+@router.delete("", status_code=204)
+async def delete_demo(request: list[str]):
+    """
+    示例：删除数据
+    """
+    ...
 
 
-    class DemoSchema(SchemaBase):
-        id: str
-        created_at: datetime
-        updated_at: datetime
-        type: DemoTypeEnum
-    ```
 
-- [components](components)：components和common不同，将子内容统一进行了汇总，因此各个使用的地方直接`from components import *`即可。下面对components提供的主要功能进行介绍：
-  - `logger`：本质就是loguru的logger，但是如果改用其他的日志记录库呢，调用端可以无感切换只改这里一个地方即可，因此从components中直接导入logger。同时也对格式和位置等进行了统一的配置。
-    ```
-    from components import *
+# 编辑数据标准：接收数据实体的Schema（put应该是完整覆盖，只更新部分应该用patch），如果更新成功无响应数据返回204状态码
+@router.put("", status_code=204)
+async def edit_demo(request: DemoSchema):
+    """
+    示例：修改数据
+    """
+    ...
 
-    logger.info("hello world")
-    ```
-  - `DatabaseManager`： 统一实现数据库的连接创建、关闭、提交回滚等逻辑
-    ```
-    from components import *
+
+# 分页查询标准：paginate_query统一封装了下载及分页支持，需要做的是按照需求基于分页的入参和响应Schema派生子Schema定义，并在接口处生成查询语句，处理过滤条件
+@router.post("/demos")
+async def get_demo_list(request: DemosRequest) -> DemosResponse:
+    """
+    示例：查询列表
+    """
+    # 生成查询语句
+    stmt = select(Demo.id, Demo.created_at)
+    # 添加过滤条件
+    if query := request.query:
+        # 以下三种方式等价
+        # 1. 使用集成的add_filters，好处是可以一次性添加上所有的过滤条件
+        stmt = add_filters(stmt, query, {Demo.created_at: FilterTypeEnum.Datetime})
+        # 2. 使用get_condition, 好处同类型的参数处理进行了封装，且比add_filters更灵活可以指定参数应用的位置（where、having）
+        if condition := get_condition(Demo.created_at, query.created_at, FilterTypeEnum.Datetime):
+            stmt = stmt.where(condition)
+        # 3. 直接使用SQLAlchemy的SQL语法进行操作，操作最灵活，但不易统一维护
+        if query.created_at:
+            stmt = stmt.where(Demo.created_at.between(query.created_at.start, query.created_at.end))
+    # 统一执行查询
+    return paginate_query(stmt, request, DemosResponse)
+
+
+# 查询详情
+@router.get("/{id}")
+async def get_demo_detail(id: str) -> DemoSchema:
+    """
+    示例：查询详情
+    """
+    ...
+```
+
+### 命令调用
+
+[command.py](##common%2Fcommand.py)：如果需要实现后台任务（与API服务并行），则需要在业务模块的command.py中按照下面的方式实现自定义的Command类
+
+```python
+from common.command import CommandBase
+
+class DemoCommand(metaclass=CommandBase):
+    name = "demo"  # 命令名称，必须唯一，自动注册命令时会使用这个名字，同时这个也是python command.py {module} xxx 中的module的参数值
   
-    with DatabaseManager() as db:
-        # 查询
-        result = db.scalar(select(Demo).where(Demo.id == xxx))
-        # 新增
-        demo = Demo(type=DemoTypeEnum.A)
-        db.add(demo)
-        # 更新
-        demo.type = DemoTypeEnum.B
-        db.commit()
-        # 删除
-        db.delete(demo)
-        # db.commit() 默认在退出上下文的时候自动进行提交，因此不需要手动commit，如果在过程中需要提交数据也是可以随时提交的
-    ```
-  - `generate_key`: ID生成，除了随机id也可以根据输入的内容每次都生成相同的id
-    ```
-    from components import *
-    
-    generate_key()  # '5c874da8b177b613fa872e9c'
-    generate_key()  # 'a3454ad598b4c53393614c02'
-    generate_key('abc')  # '0fc55f5588d4d4fed43e64a8'
-    assert generate_key('abc', 123) == '39fb5e13879b5430df95d870'
-    generate_key(key_len=12)  # 'ef0685eadd03'
-    generate_key(key_len=36)  # '3d4accaa58a84c25a0c2d599c83c3dee'
-    generate_key(need_uuid=True)  # UUID('d855df18-e925-4aa6-8941-49ce2eb7b9dc')
-    ```
-  - `KafkaManager`：统一实现kafka的生成和消费操作
-    - 生产数据：
-      ```
-      from components import *
-      
-      # 1.生成单条数据
-      KafkaManager.produce(
-            "topic_name",
-            {
-                "id": generate_key(),
-                "value": 0,
-            },
+    @staticmethod
+    def add_parser(parser):
+        parser.add_argument(
+            "--username",
+            default="admin",
+            help="参数说明",
         )
-      
-      # 2.批量生产也是欢迎的，PS:批量生产也不需要关心队列的长度，会自动进行分批发送，所以有很长的数据就一股脑扔进去也没关系
-      KafkaManager.produce(
-            "topic_name",
-            [{"id": generate_key()} for i in range(10000)],
-        )
-      ```
-    - 消费数据：`KafkaManager.consume`是一个生成器，可以不断的从kafka中消费数据，除非触发了异常。
-      ```
-      from components import *
-      
-      # 1.消费单一Topic的数据
-      for data in KafkaManager.consume("topic_name"):
-          assert isinstance(data, dict)
-      
-      # 2.同时消费多个Topic也是可以的
-      for data in KafkaManager.consume("topic_name1", "topic_name2"):
-          assert isinstance(data, dict)
-      
-      # 3.批量消费数据: 通过limit参数可以指定每次消费的数据量，如果不指定默认则是上面的单条消费
-      for data in KafkaManager.consume("topic_name", limit=1000):
-          assert isinstance(data, list)
-          assert len(data) == 1000
-        
-      # 4.提前创建好consumer：consumer参数默认是None，此时会根据topic_name自动创建consumer，如果指定consumer则使用提前创建好的consumer
-      # PS：自动创建的consumer在异常发生时除了会中断生成器也会自动关闭和取消订阅，但是如果手动创建了consumer则不会自动关闭，需要手动关闭
-      consumer = KafkaManager.get_consumer("topic_name")
-      for data in KafkaManager.consume(consumer=consumer):
-          assert isinstance(data, dict)
-      
-      # 5.非JSON格式的数据消费：默认是把数据当作JSON格式进行消费并转换成python的数据类型，但是也支持非JSON格式
-      for data in KafkaManager.consume("topic_name", need_load=False):
-          assert isinstance(data, bytes)
-      ```
-  - `RedisManager`：本质上就是用来获取Redis的Client，但是可以不用关心具体的连接参数是什么，同时针对“对象”格式简单进行了封装。
-    ```
-    from components import *
-    
-    redis = RedisManager.get_client()
-    redis.incrby("key", 1)
-    redis.get("key")
-    
-    # 也可以指定db
-    redis1 = RedisManager.get_client(1)
-    
-    # 如果需要存取对象的话可以直接用类方法
-    RedisManager.set_object("key", {"a": 1})
-    RedisManager.set_object("key1", {"a": 1}, ex=60)  # 设置过期时间
-    RedisManager.get_object("key") == {"a": 1}
-    RedisManager.get_object("unexist_key", 100) == 100  # 可以指定key不存在时的默认值
-    ```
-  - `SecretManager`：加密解密相关的操作，可以对一些敏感信息进行加密，比如密码、密钥等。
-    ```
-    from components import *
-    
-    # 加密
-    secret = SecretManager.encrypt("123456")
-    assert secret != "123456"  # 加密后的内容取决于密钥是什么，因此生产环境不能使用随机密钥
-    # 解密
-    assert SecretManager.decrypt(secret) == "123456"
-    ```
-  - 其他诸如`bytes_to_str`，`str_to_bytes`等不再一一追朔，每个方法都有对应的注释说明。
+  
+    @staticmethod
+    def run(params):
+        assert "username" in params
+```
+
+### ORM模型定义
+
+[model.py](common%2Fmodel.py)：如果需要定于数据库的ORM模型，则需要在业务模块的models.py中按照下面的方式定义
+
+```python
+from .enums import *
+from common.model import *
+
+
+class Demo(ModelBase, ModelTimeColumns):
+    __tablename__ = "demo"
+
+    type: Mapped[DemoTypeEnum]
+    ...
+
+```
+
+### 业务模型定义
+
+[schema.py](common%2Fschema.py)：业务模块的schema.py中按照下面的方式定义
+
+```python
+from .enums import *
+from common.schema import *
+
+
+class DemoSchema(SchemaBase):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    type: DemoTypeEnum
+```
+
+## 组件使用示例
+
+[components](components)：components和common不同，将子内容统一进行了汇总，因此各个使用的地方直接`from components import *`即可。
+
+### 日志记录
+
+本质就是loguru的logger，但是如果改用其他的日志记录库呢，调用端可以无感切换只改这里一个地方即可，因此从components中直接导入logger。同时也对格式和位置等进行了统一的配置。
+
+```python
+from components import *
+
+logger.info("hello world")
+```
+
+### Kafka
+
+- 生产数据：
+
+```python
+from components import *
+
+# 1.生成单条数据
+KafkaManager.produce(
+      "topic_name",
+      {
+          "id": generate_key(),
+          "value": 0,
+      },
+  )
+
+# 2.批量生产也是欢迎的，PS:批量生产也不需要关心队列的长度，会自动进行分批发送，所以有很长的数据就一股脑扔进去也没关系
+KafkaManager.produce(
+      "topic_name",
+      [{"id": generate_key()} for i in range(10000)],
+  )
+```
+
+- 消费数据：`KafkaManager.consume`是一个生成器，可以不断的从kafka中消费数据，除非触发了异常。
+
+```python
+from components import *
+
+# 1.消费单一Topic的数据
+for data in KafkaManager.consume("topic_name"):
+    assert isinstance(data, dict)
+
+# 2.同时消费多个Topic也是可以的
+for data in KafkaManager.consume("topic_name1", "topic_name2"):
+    assert isinstance(data, dict)
+
+# 3.批量消费数据: 通过limit参数可以指定每次消费的数据量，如果不指定默认则是上面的单条消费
+for data in KafkaManager.consume("topic_name", limit=1000):
+    assert isinstance(data, list)
+    assert len(data) == 1000
+  
+# 4.提前创建好consumer：consumer参数默认是None，此时会根据topic_name自动创建consumer，如果指定consumer则使用提前创建好的consumer
+# PS：自动创建的consumer在异常发生时除了会中断生成器也会自动关闭和取消订阅，但是如果手动创建了consumer则不会自动关闭，需要手动关闭
+consumer = KafkaManager.get_consumer("topic_name")
+for data in KafkaManager.consume(consumer=consumer):
+    assert isinstance(data, dict)
+
+# 5.非JSON格式的数据消费：默认是把数据当作JSON格式进行消费并转换成python的数据类型，但是也支持非JSON格式
+for data in KafkaManager.consume("topic_name", need_load=False):
+    assert isinstance(data, bytes)
+```
+
+### Redis
+
+```python
+from components import *
+
+# 推荐一个业务模块全大写定义一个全局的客户端实例
+REDIS = RedisManager.get_client()
+REDIS.incrby("key", 1)
+REDIS.get("key")
+
+# 也可以指定db
+REDIS1 = RedisManager.get_client(1)
+
+# 如果需要存取对象的话可以直接用类方法
+RedisManager.set_object("key", {"a": 1})
+RedisManager.set_object("key1", {"a": 1}, ex=60)  # 设置过期时间
+RedisManager.get_object("key") == {"a": 1}
+RedisManager.get_object("unexist_key", 100) == 100  # 可以指定key不存在时的默认值
+```
+
+### 数据库
+
+```python
+from sqlalchemy import select
+
+from components import *
+from modules.agent.models import *
+
+with DatabaseManager() as db:
+    # 查询
+    result = db.scalar(select(Agent).where(Agent.id == 'xxx'))
+    # 新增
+    demo = Agent(rule_id=0)
+    db.add(demo)
+    # 更新
+    demo.rule_id = 1
+    # 删除
+    db.delete(demo)
+    # db.commit() 默认在退出上下文的时候自动进行提交，因此不需要手动commit，如果在过程中需要提交数据也是可以随时提交的
+```
+
+### 加密解密
+
+`SecretManager`：加密解密相关的操作，可以对一些敏感信息进行加密，比如密码、密钥等。
+
+```python
+from components import *
+
+# 加密
+secret = SecretManager.encrypt("123456")
+assert secret != "123456"  # 加密后的内容取决于密钥是什么，因此生产环境不能使用随机密钥
+# 解密
+assert SecretManager.decrypt(secret) == "123456"
+```

@@ -47,7 +47,7 @@ def register_handler(_app):
                     },
                 }
                 for item in ex.args[0]
-            ],
+            ] if CONFIG.debug else [],
         }
         return JSONResponse(status_code=sc, content=content)
 
@@ -64,6 +64,7 @@ def create_app():
         description="",
         version="main",
         generate_unique_id_function=generate_key,
+        openapi_url="/openapi.json" if CONFIG.debug else None,
     )
 
     for router in ROUTERS:
@@ -80,4 +81,6 @@ if __name__ == "__main__":  # Debug时使用该方法
     for x in APICode:
         c, m, s = x.value
         print(f"错误消息：{m}，错误码：{c}，状态码：{s}")
+    if CONFIG.debug:
+        logger.info("Debug mode")
     uvicorn.run(app, host="127.0.0.1", port=8080)

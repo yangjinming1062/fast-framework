@@ -405,22 +405,83 @@ RedisManager.get_object("unexist_key", 100) == 100  # 可以指定key不存在�
 ### 数据库
 
 ```python
+from sqlalchemy import delete
+from sqlalchemy import insert
 from sqlalchemy import select
+from sqlalchemy import update
 
 from components import *
-from modules.agent.models import *
+from modules.auth.models import *
 
+# region 增
 with DatabaseManager() as db:
-    # 查询
-    result = db.scalar(select(Agent).where(Agent.id == 'xxx'))
-    # 新增
-    demo = Agent(rule_id=0)
-    db.add(demo)
-    # 更新
-    demo.rule_id = 1
-    # 删除
-    db.delete(demo)
+    
+    # 使用ORM的方式
+    item = User(username=0)
+    db.add(item)
+    db.flush()  # 如果需要自增id这种提交后生成的信息又不想提交可以先flush
     # db.commit() 默认在退出上下文的时候自动进行提交，因此不需要手动commit，如果在过程中需要提交数据也是可以随时提交的
+    # tips: # db.add() * N 之后会在flush或者commit进行批量插入，不用再单独进行bulk_save_objects了
+    
+    # 使用sql的方式
+    stmt = insert(User).values(username='admin')
+    db.execute(stmt)
+# endregion
+
+# region 查
+with DatabaseManager() as db:
+    # 有唯一主键使用唯一主键获取数据实例
+    item = db.get(User, 'user-id')
+    assert isinstance(item, User)
+    
+    # 用各种where条件构建sql语句查实例
+    stmt = select(User).where(User.id == 'user-id')
+    item = db.scalar(stmt)  # tips：查询数据的时候db.scalar(stmt)等效于db.execute(stmt).scalar()，从简洁的角度出发建议使用前者
+    assert isinstance(item, User)
+    
+    # 2.0版本前ORM的查询方式，不推荐
+    users = db.query(User).filter_by(phone=0).all()
+    assert isinstance(users, list)
+    
+    # 推荐使用stmt的方式
+    stmt = select(User).where(User.phone == 0)
+    users = db.scalars(stmt).all()  # tips: 和scalar一样db.scalars(stmt).all()等效于db.execute(stmt).scalars().all()
+    assert isinstance(users, list)
+    # tips: 如果查询出的数据需要遍历进行处理更好的方式是下面这种直接迭代db.scalars(stmt)，可以减少一次遍历（all的本质就是先把数据都拿出来）
+    for item in db.scalars(stmt):
+        ...
+    
+    # 只查询部分列的值
+    stmt = select(User.id, User.username)
+    data = db.execute(stmt).all()  # 这种查询中有多个列的时候就不能scalar或scalars，因为scalar就只取第一列的值
+    # 查询的每一行是一个tuple
+    for user_id, username in db.execute(stmt):
+        ...
+# endregion
+
+# region 删
+with DatabaseManager() as db:
+    # 使用ORM的方式：需要先查出来一个实例对象
+    item = db.get(User, 'user-id')
+    db.delete(item)  # tips: 这种方式的缺点就是一下只能删一条数据，适合单条数据编辑的场景，优点是可以同时删除掉级联的子数据（如果定义了外键关联的话）
+    
+    # 使用sql语句的方式: 便于一次性进行批量删除
+    stmt = delete(User).where(User.id == 'user-id')
+    db.execute(stmt)
+# endregion
+
+# region 改
+with DatabaseManager() as db:
+    # 使用ORM的方式：需要先查出来一个实例对象
+    item = db.get(User, 'user-id')
+    item.username = 'new'  # 没错，就直接赋值就可以了，提交就变。tips: 需要注意的就是在一般查询场景下因为orm的这种特性尽量就不要对查出来的实例进行赋值操作了，可以对dump出来的json数据进行编辑（如果不想修改的话）
+    db.flush()
+    
+    # 使用sql语句的方式
+    stmt = update(User).where(User.id == 'user-id').values(username='new')
+    db.execute(stmt)
+# endregion
+
 ```
 
 ### 加密解密

@@ -52,6 +52,21 @@ def register_handler(_app):
         return JSONResponse(status_code=sc, content=content)
 
 
+def generate_id(api):
+    """
+    生成自定义格式的operationId
+
+    Args:
+        api (APIRoute):
+
+    Returns:
+        str: id
+    """
+    location = api.endpoint.__module__.split(".")[1:]
+    location = ".".join(location)  # 去掉最顶层的api.只保留agent.v1.files这种
+    return f"{location}.{api.endpoint.__name__}"
+
+
 def create_app():
     """
     创建并配置FastAPI的APP。
@@ -63,7 +78,7 @@ def create_app():
         title="API",
         description="",
         version="main",
-        generate_unique_id_function=generate_key,
+        generate_unique_id_function=generate_id,
         openapi_url="/openapi.json" if CONFIG.debug else None,
     )
 

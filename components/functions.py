@@ -1,16 +1,17 @@
 import base64
+import inspect
 import uuid
 from functools import wraps
 
 from sqlalchemy import Row
 
-from components import logger
+from .logger import logger
 from config import CONSTANTS
 
 
-def exceptions(default=None, log_level=4):
+def exceptions(default=None, log_level=5):
     """
-    装饰器: 异常捕获。
+    装饰器，用于捕获函数执行过程中的异常并返回默认值
 
     Args:
         default (Any | None): 当发生异常时返回的值。
@@ -28,7 +29,24 @@ def exceptions(default=None, log_level=4):
 
     def decorator(function):
         @wraps(function)
-        def wrapper(*args, **kwargs):
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await function(*args, **kwargs)
+            except Exception as ex:
+                if log_level == 5:
+                    logger.exception(ex)
+                elif log_level == 4:
+                    logger.error(ex)
+                elif log_level == 3:
+                    logger.warning(ex)
+                elif log_level == 2:
+                    logger.info(ex)
+                elif log_level == 1:
+                    logger.debug(ex)
+                return default
+
+        @wraps(function)
+        def sync_wrapper(*args, **kwargs):
             try:
                 return function(*args, **kwargs)
             except Exception as ex:
@@ -44,7 +62,7 @@ def exceptions(default=None, log_level=4):
                     logger.debug(ex)
                 return default
 
-        return wrapper
+        return async_wrapper if inspect.iscoroutinefunction(function) else sync_wrapper
 
     return decorator
 

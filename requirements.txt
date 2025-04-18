@@ -1,9 +1,11 @@
-# Framework
-fastapi==0.111.0
-hypercorn
-pydantic
-pyyaml
-# Components
+# region Web框架
+fastapi==0.115.8
+uvicorn==0.34.0
+pydantic==2.10.6
+python-multipart==0.0.20
+# endregion
+
+# region 组用到的库
 python-jose>=3.3.0
 cryptography==42.0.5
 alembic==1.13.1
@@ -12,7 +14,9 @@ sqlalchemy-doris[pymysql]==0.2.2
 pymysql
 redis==3.5.2
 confluent-kafka==2.4.0
-# Other
+# endregion
+
+# region 其他
 requests
-loguru
 orjson
+# endregion

@@ -38,16 +38,20 @@ def register_handler(_app):
         content = {
             "code": code,
             "message": msg,
-            "details": [
-                {
-                    "reason": item["msg"],
-                    "metadata": {
-                        "type": item["type"],
-                        "location": "→".join([str(x) for x in item["loc"]]),
-                    },
-                }
-                for item in ex.args[0]
-            ] if CONFIG.debug else [],
+            "details": (
+                [
+                    {
+                        "reason": item["msg"],
+                        "metadata": {
+                            "type": item["type"],
+                            "location": "→".join([str(x) for x in item["loc"]]),
+                        },
+                    }
+                    for item in ex.args[0]
+                ]
+                if CONFIG.debug
+                else []
+            ),
         }
         return JSONResponse(status_code=sc, content=content)
 

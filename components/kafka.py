@@ -5,7 +5,7 @@ from confluent_kafka import Producer
 from confluent_kafka import TopicPartition
 
 from .functions import orjson_dump_extend
-from components import logger
+from .logger import logger
 from config import CONFIG
 
 
@@ -35,7 +35,7 @@ class KafkaManager:
         if not config:
             config = CONFIG.kafka_consumer_config
         else:
-            config = CONFIG.kafka_consumer_config.update(config)
+            config = CONFIG.kafka_consumer_config | config
         consumer = Consumer(config)
         if partition is not None:
             consumer.assign([TopicPartition(t, partition) for t in topic])

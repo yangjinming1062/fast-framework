@@ -24,6 +24,8 @@ from config import *
 from modules.auth.enums import UserStatusEnum
 from modules.auth.models import User
 
+
+logger = get_logger(module="api")
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
 
 
